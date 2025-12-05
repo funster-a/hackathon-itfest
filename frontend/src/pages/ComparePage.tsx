@@ -119,20 +119,6 @@ const ComparePage = () => {
                 <TableCell></TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium pl-6 pr-8">{t('compare.militaryDept')}</TableCell>
-                <TableCell></TableCell>
-                {compareList.map((university) => (
-                  <TableCell key={university.id} className="pl-6">
-                    {university.hasMilitaryDept ? (
-                      <Check className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <X className="w-5 h-5 text-red-600" />
-                    )}
-                  </TableCell>
-                ))}
-                <TableCell></TableCell>
-              </TableRow>
-              <TableRow>
                 <TableCell className="font-medium pl-6 pr-8">{t('compare.type')}</TableCell>
                 <TableCell></TableCell>
                 {compareList.map((university) => (
@@ -160,6 +146,48 @@ const ComparePage = () => {
                 {compareList.map((university) => (
                   <TableCell key={university.id} className="pl-6">
                     {university.grantsPerYear ? university.grantsPerYear.toLocaleString() : '-'}
+                  </TableCell>
+                ))}
+                <TableCell></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium pl-6 pr-8">{t('compare.exchangeProgram')}</TableCell>
+                <TableCell></TableCell>
+                {compareList.map((university) => (
+                  <TableCell key={university.id} className="pl-6">
+                    {university.international?.hasExchangeProgram ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <X className="w-5 h-5 text-red-600" />
+                    )}
+                  </TableCell>
+                ))}
+                <TableCell></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium pl-6 pr-8">{t('compare.doubleDegree')}</TableCell>
+                <TableCell></TableCell>
+                {compareList.map((university) => (
+                  <TableCell key={university.id} className="pl-6">
+                    {university.international?.hasDoubleDegree ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <X className="w-5 h-5 text-red-600" />
+                    )}
+                  </TableCell>
+                ))}
+                <TableCell></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium pl-6 pr-8">{t('compare.requiresIELTS')}</TableCell>
+                <TableCell></TableCell>
+                {compareList.map((university) => (
+                  <TableCell key={university.id} className="pl-6">
+                    {university.international?.requiresIELTS ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <X className="w-5 h-5 text-red-600" />
+                    )}
                   </TableCell>
                 ))}
                 <TableCell></TableCell>

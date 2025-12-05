@@ -136,7 +136,6 @@ const HomePage = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [hasDormitory, setHasDormitory] = useState<boolean>(false);
-  const [hasMilitaryDept, setHasMilitaryDept] = useState<boolean>(false);
   const [selectedProfiles, setSelectedProfiles] = useState<string[]>([]);
   const [selectedProfessions, setSelectedProfessions] = useState<string[]>([]);
   const [selectedDegrees, setSelectedDegrees] = useState<string[]>([]);
@@ -182,22 +181,18 @@ const HomePage = () => {
       if (hasDormitory && !university.hasDormitory) {
         return false;
       }
-      // Фильтр по военной кафедре (применяется только если выбрано)
-      if (hasMilitaryDept && !university.hasMilitaryDept) {
-        return false;
-      }
       // Фильтр по стоимости обучения
       if (university.price < priceRange[0] || university.price > priceRange[1]) {
         return false;
       }
       return true;
     });
-  }, [searchQuery, selectedCity, hasDormitory, hasMilitaryDept, priceRange]);
+  }, [searchQuery, selectedCity, hasDormitory, priceRange]);
 
   // Сброс страницы при изменении фильтров
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCity, hasDormitory, hasMilitaryDept, selectedProfiles, selectedProfessions, selectedDegrees, priceRange]);
+  }, [searchQuery, selectedCity, hasDormitory, selectedProfiles, selectedProfessions, selectedDegrees, priceRange]);
 
   // Вычисление пагинации
   const totalPages = Math.ceil(filteredUniversities.length / ITEMS_PER_PAGE);
@@ -222,7 +217,6 @@ const HomePage = () => {
     setSearchQuery('');
     setSelectedCity(null);
     setHasDormitory(false);
-    setHasMilitaryDept(false);
     setSelectedProfiles([]);
     setSelectedProfessions([]);
     setSelectedDegrees([]);
@@ -232,7 +226,6 @@ const HomePage = () => {
   const hasActiveFilters = 
     selectedCity !== null || 
     hasDormitory || 
-    hasMilitaryDept || 
     selectedProfiles.length > 0 || 
     selectedProfessions.length > 0 ||
     selectedDegrees.length > 0 ||
@@ -527,20 +520,6 @@ const HomePage = () => {
               </label>
             </div>
 
-            {/* Фильтр по военной кафедре - чекбокс */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="militaryDept"
-                checked={hasMilitaryDept}
-                onCheckedChange={(checked) => setHasMilitaryDept(checked === true)}
-              />
-              <label
-                htmlFor="militaryDept"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-              >
-                {t('filters.militaryDept')}
-              </label>
-            </div>
               </>
             )}
           </CardContent>

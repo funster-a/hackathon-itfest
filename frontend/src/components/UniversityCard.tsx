@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, Star, Box, Heart } from 'lucide-react';
 import type { IUniversity } from '../types';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useCompareStore } from '../store/useCompareStore';
 import { useFavoritesStore } from '../store/useFavoritesStore';
 import { useLocale } from './LocaleProvider';
+import { useToast } from '@/hooks/use-toast';
 
 interface UniversityCardProps {
   university: IUniversity;
@@ -17,10 +18,32 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
   const { addToCompare, compareList } = useCompareStore();
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavoritesStore();
   const { t } = useLocale();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const hasChance = userEntScore !== null && userEntScore >= university.minEntScore;
   const showIndicator = userEntScore !== null;
   const isInCompare = compareList.some((u) => u.id === university.id);
   const isFav = isFavorite(university.id);
+
+  const handleAddToCompare = () => {
+    if (!isInCompare) {
+      addToCompare(university);
+      toast({
+        title: t('toast.addedToCompare'),
+        description: t('toast.addedToCompareDescription', { name: university.name }),
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/compare')}
+            className="ml-2"
+          >
+            {t('toast.goToCompare')}
+          </Button>
+        ),
+      });
+    }
+  };
 
   const handleFavoriteToggle = () => {
     if (isFav) {
@@ -116,7 +139,7 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
       <CardFooter>
         <Button
           variant={isInCompare ? 'outline' : 'default'}
-          onClick={() => addToCompare(university)}
+          onClick={handleAddToCompare}
           disabled={isInCompare}
           className="w-full"
         >

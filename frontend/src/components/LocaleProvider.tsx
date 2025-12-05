@@ -69,6 +69,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'details.backToCatalog': 'Вернуться к каталогу',
     'details.tabs.overview': 'Обзор',
     'details.tabs.details': 'Детали',
+    'details.tabs.programs': 'Академические программы',
+    'details.tabs.admissions': 'Поступление',
+    'details.tabs.international': 'Международное сотрудничество',
     'details.overview.title': 'Основная информация',
     'details.overview.city': 'Город:',
     'details.overview.cost': 'Стоимость обучения:',
@@ -86,6 +89,28 @@ const translations: Record<Locale, Record<string, string>> = {
     'details.virtualTour': 'Виртуальный тур',
     'details.virtualTourTitle': 'Виртуальный тур:',
     'details.openInNewWindow': 'Открыть в полном окне',
+    'details.mission': 'Миссия:',
+    'details.history': 'История:',
+    'details.programs.title': 'Академические программы',
+    'details.programs.bachelor': 'Бакалавриат',
+    'details.programs.master': 'Магистратура',
+    'details.programs.phd': 'Докторантура',
+    'details.programs.addToCompare': 'Добавить программу к сравнению',
+    'details.programs.alreadyInCompare': 'Уже в сравнении',
+    'details.admissions.title': 'Информация о поступлении',
+    'details.admissions.requirements': 'Требования',
+    'details.admissions.deadlines': 'Сроки подачи',
+    'details.admissions.scholarships': 'Стипендии и гранты',
+    'details.admissions.procedure': 'Процедура поступления',
+    'details.international.title': 'Международное сотрудничество',
+    'details.international.exchange': 'Программы обмена',
+    'details.international.partners': 'Партнеры',
+    'details.international.foreignStudents': 'Возможности для иностранных студентов',
+    
+    // Toast
+    'toast.addedToCompare': 'Добавлено в сравнение',
+    'toast.addedToCompareDescription': 'Университет "{name}" добавлен в список сравнения',
+    'toast.goToCompare': 'Перейти к сравнению',
     
     // ComparePage
     'compare.title': 'Сравнение университетов',
@@ -104,6 +129,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'compare.public': 'Государственный',
     'compare.languages': 'Язык обучения',
     'compare.grantsPerYear': 'Грантов в год',
+    'compare.exchangeProgram': 'Программа обмена',
+    'compare.doubleDegree': 'Программа двойного диплома',
+    'compare.requiresIELTS': 'IELTS сертификат',
     
     // Favorites
     'favorites.title': 'Избранное',
@@ -164,6 +192,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'details.backToCatalog': 'Каталогқа оралу',
     'details.tabs.overview': 'Шолу',
     'details.tabs.details': 'Толығырақ',
+    'details.tabs.programs': 'Академиялық бағдарламалар',
+    'details.tabs.admissions': 'Түсу',
+    'details.tabs.international': 'Халықаралық ынтымақтастық',
     'details.overview.title': 'Негізгі ақпарат',
     'details.overview.city': 'Қала:',
     'details.overview.cost': 'Оқу бағасы:',
@@ -179,8 +210,30 @@ const translations: Record<Locale, Record<string, string>> = {
     'details.addToFavorites': 'Таңдаулыларға қосу',
     'details.removeFromFavorites': 'Таңдаулылардан алып тастау',
     'details.virtualTour': 'Виртуалды тур',
+    'details.mission': 'Миссия:',
+    'details.history': 'Тарих:',
+    'details.programs.title': 'Академиялық бағдарламалар',
+    'details.programs.bachelor': 'Бакалавриат',
+    'details.programs.master': 'Магистратура',
+    'details.programs.phd': 'Докторантура',
+    'details.programs.addToCompare': 'Бағдарламаны салыстыруға қосу',
+    'details.programs.alreadyInCompare': 'Қазірдің өзінде салыстыруда',
+    'details.admissions.title': 'Түсу туралы ақпарат',
+    'details.admissions.requirements': 'Талаптар',
+    'details.admissions.deadlines': 'Өтініш беру мерзімдері',
+    'details.admissions.scholarships': 'Стипендиялар мен гранттар',
+    'details.admissions.procedure': 'Түсу процедурасы',
+    'details.international.title': 'Халықаралық ынтымақтастық',
+    'details.international.exchange': 'Алмасу бағдарламалары',
+    'details.international.partners': 'Серіктестер',
+    'details.international.foreignStudents': 'Шетелдік студенттерге мүмкіндіктер',
     'details.virtualTourTitle': 'Виртуалды тур:',
     'details.openInNewWindow': 'Толық терезеде ашу',
+    
+    // Toast
+    'toast.addedToCompare': 'Салыстыруға қосылды',
+    'toast.addedToCompareDescription': 'Университет "{name}" салыстыру тізіміне қосылды',
+    'toast.goToCompare': 'Салыстыруға өту',
     
     // ComparePage
     'compare.title': 'Университеттерді салыстыру',
@@ -199,6 +252,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'compare.public': 'Мемлекеттік',
     'compare.languages': 'Оқыту тілі',
     'compare.grantsPerYear': 'Жылына грант',
+    'compare.exchangeProgram': 'Алмасу бағдарламасы',
+    'compare.doubleDegree': 'Қос диплом бағдарламасы',
+    'compare.requiresIELTS': 'IELTS сертификаты',
     
     // Favorites
     'favorites.title': 'Таңдаулылар',
@@ -259,6 +315,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'details.backToCatalog': 'Back to Catalog',
     'details.tabs.overview': 'Overview',
     'details.tabs.details': 'Details',
+    'details.tabs.programs': 'Academic Programs',
+    'details.tabs.admissions': 'Admissions',
+    'details.tabs.international': 'International Cooperation',
     'details.overview.title': 'Basic Information',
     'details.overview.city': 'City:',
     'details.overview.cost': 'Tuition Fee:',
@@ -274,8 +333,30 @@ const translations: Record<Locale, Record<string, string>> = {
     'details.addToFavorites': 'Add to Favorites',
     'details.removeFromFavorites': 'Remove from Favorites',
     'details.virtualTour': 'Virtual Tour',
+    'details.mission': 'Mission:',
+    'details.history': 'History:',
+    'details.programs.title': 'Academic Programs',
+    'details.programs.bachelor': 'Bachelor',
+    'details.programs.master': 'Master',
+    'details.programs.phd': 'PhD',
+    'details.programs.addToCompare': 'Add Program to Compare',
+    'details.programs.alreadyInCompare': 'Already in Compare',
+    'details.admissions.title': 'Admissions Information',
+    'details.admissions.requirements': 'Requirements',
+    'details.admissions.deadlines': 'Application Deadlines',
+    'details.admissions.scholarships': 'Scholarships and Grants',
+    'details.admissions.procedure': 'Admission Procedure',
+    'details.international.title': 'International Cooperation',
+    'details.international.exchange': 'Exchange Programs',
+    'details.international.partners': 'Partners',
+    'details.international.foreignStudents': 'Opportunities for Foreign Students',
     'details.virtualTourTitle': 'Virtual Tour:',
     'details.openInNewWindow': 'Open in full window',
+    
+    // Toast
+    'toast.addedToCompare': 'Added to Compare',
+    'toast.addedToCompareDescription': 'University "{name}" has been added to comparison',
+    'toast.goToCompare': 'Go to Compare',
     
     // ComparePage
     'compare.title': 'Compare Universities',
@@ -294,6 +375,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'compare.public': 'Public',
     'compare.languages': 'Language of Instruction',
     'compare.grantsPerYear': 'Grants per Year',
+    'compare.exchangeProgram': 'Exchange Program',
+    'compare.doubleDegree': 'Double Degree Program',
+    'compare.requiresIELTS': 'IELTS Certificate Required',
     
     // Favorites
     'favorites.title': 'Favorites',
@@ -320,8 +404,14 @@ export function LocaleProvider({
     () => (localStorage.getItem(storageKey) as Locale) || defaultLocale
   );
 
-  const t = (key: string): string => {
-    return translations[locale][key] || key;
+  const t = (key: string, params?: Record<string, string>): string => {
+    let text = translations[locale][key] || key;
+    if (params) {
+      Object.keys(params).forEach((param) => {
+        text = text.replace(`{${param}}`, params[param]);
+      });
+    }
+    return text;
   };
 
   const value = {

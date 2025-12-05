@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import ScrollToTop from './ScrollToTop';
+import { Toaster } from '@/components/ui/toaster';
 
 const Layout = () => {
   return (
@@ -10,6 +11,7 @@ const Layout = () => {
         <Outlet />
       </main>
       <ScrollToTop />
+      <Toaster />
     </div>
   );
 };
