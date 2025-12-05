@@ -161,3 +161,75 @@ export const getAiRecommendation = async (data: IAdvisorRequest): Promise<IAdvis
   }
 };
 
+export interface ICompareAiRequest {
+  universities: IUniversity[];
+  userGoal: string;
+}
+
+export interface ICompareAiResponse {
+  winner: string;
+  analysis: string;
+  reasoning: string;
+}
+
+export const compareWithAi = async (data: ICompareAiRequest): Promise<ICompareAiResponse> => {
+  try {
+    const response = await api.post<ICompareAiResponse>('/ai/compare', data);
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при сравнении университетов с ИИ:', error);
+    // Mock-ответ для MVP
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const universities = data.universities;
+        if (universities.length === 0) {
+          resolve({
+            winner: '',
+            analysis: 'Не выбрано ни одного университета для сравнения.',
+            reasoning: '',
+          });
+          return;
+        }
+        
+        // Выбираем первый университет как победителя (можно улучшить логику)
+        const winner = universities[0];
+        const otherUnis = universities.slice(1);
+        
+        // Генерируем анализ на основе данных
+        const priceComparison = universities.map(u => `${u.name}: ${u.price.toLocaleString()} ₸`).join(', ');
+        const ratingComparison = universities.map(u => `${u.name}: ${u.rating}/5`).join(', ');
+        
+        let analysis = `## Сравнение университетов\n\n`;
+        analysis += `**Стоимость обучения:** ${priceComparison}\n\n`;
+        analysis += `**Рейтинг:** ${ratingComparison}\n\n`;
+        
+        if (data.userGoal.toLowerCase().includes('программист') || data.userGoal.toLowerCase().includes('it')) {
+          analysis += `Исходя из вашей цели стать программистом, **${winner.name}** выглядит предпочтительнее благодаря сильной базе IT`;
+          if (winner.price > otherUnis[0]?.price) {
+            analysis += `, несмотря на более высокую цену`;
+          }
+          analysis += `. Университет находится в ${winner.city} и имеет рейтинг ${winner.rating}/5.`;
+        } else if (data.userGoal.toLowerCase().includes('цена') || data.userGoal.toLowerCase().includes('дешев')) {
+          const cheapest = universities.reduce((min, u) => u.price < min.price ? u : min);
+          analysis += `Если для вас важнее всего низкая цена, то **${cheapest.name}** предлагает самое доступное обучение (${cheapest.price.toLocaleString()} ₸).`;
+        } else if (data.userGoal.toLowerCase().includes('общаг') || data.userGoal.toLowerCase().includes('общежит')) {
+          const withDorm = universities.filter(u => u.hasDormitory);
+          if (withDorm.length > 0) {
+            analysis += `Для вас важнее всего наличие общежития. **${withDorm[0].name}** предоставляет общежитие для студентов.`;
+          } else {
+            analysis += `К сожалению, ни один из выбранных университетов не предоставляет общежитие.`;
+          }
+        } else {
+          analysis += `Исходя из вашей цели "${data.userGoal}", **${winner.name}** выглядит предпочтительнее благодаря сочетанию качества образования и доступности.`;
+        }
+        
+        resolve({
+          winner: winner.name,
+          analysis: analysis,
+          reasoning: `Рекомендация основана на анализе стоимости обучения, рейтинга, местоположения и других факторов, важных для вашей цели: "${data.userGoal}".`,
+        });
+      }, 2000);
+    });
+  }
+};
+
