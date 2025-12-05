@@ -25,6 +25,8 @@ export interface IInternational {
   hasExchangeProgram?: boolean;
   hasDoubleDegree?: boolean;
   requiresIELTS?: boolean;
+  minIELTS?: number; // Минимальный балл IELTS (например, 5.5, 6.0)
+  doubleDegreePrograms?: string[]; // Конкретные программы двойного диплома
 }
 
 export interface IUniversity {
