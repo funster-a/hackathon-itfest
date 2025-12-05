@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Languages } from 'lucide-react';
+import { Moon, Sun, Languages, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,11 +10,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTheme } from './ThemeProvider';
 import { useLocale } from './LocaleProvider';
+import { useFavoritesStore } from '../store/useFavoritesStore';
+import FavoritesModal from './FavoritesModal';
 
 const Header = () => {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const { locale, setLocale, t } = useLocale();
+  const { favorites } = useFavoritesStore();
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -81,6 +84,17 @@ const Header = () => {
 
           {/* Управление справа */}
           <div className="flex items-center gap-2">
+            <FavoritesModal>
+              <Button variant="ghost" size="icon" className="h-9 w-9 relative">
+                <Heart className="h-5 w-5" />
+                {favorites.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {favorites.length > 9 ? '9+' : favorites.length}
+                  </span>
+                )}
+                <span className="sr-only">{t('header.favorites')}</span>
+              </Button>
+            </FavoritesModal>
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9">

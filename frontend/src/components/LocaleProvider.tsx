@@ -20,6 +20,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'header.title': 'ZeroHub',
     'header.catalog': 'Каталог',
     'header.compare': 'Сравнение',
+    'header.favorites': 'Избранное',
     
     // HomePage
     'home.title': 'Каталог университетов',
@@ -59,6 +60,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'card.cost': 'Стоимость:',
     'card.minScore': 'Проходной балл:',
     'card.tour': '360° Tour',
+    'card.addToFavorites': 'Добавить в избранное',
+    'card.removeFromFavorites': 'Удалить из избранного',
     
     // UniversityDetailsPage
     'details.back': 'Назад к каталогу',
@@ -78,6 +81,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'details.details.no': 'Нет',
     'details.addToCompare': 'Добавить к сравнению',
     'details.alreadyInCompare': 'Уже в сравнении',
+    'details.addToFavorites': 'Добавить в избранное',
+    'details.removeFromFavorites': 'Удалить из избранного',
     'details.virtualTour': 'Виртуальный тур',
     'details.virtualTourTitle': 'Виртуальный тур:',
     'details.openInNewWindow': 'Открыть в полном окне',
@@ -99,12 +104,18 @@ const translations: Record<Locale, Record<string, string>> = {
     'compare.public': 'Государственный',
     'compare.languages': 'Язык обучения',
     'compare.grantsPerYear': 'Грантов в год',
+    
+    // Favorites
+    'favorites.title': 'Избранное',
+    'favorites.empty': 'У вас пока нет избранных университетов',
+    'favorites.remove': 'Удалить из избранного',
   },
   kk: {
     // Header
     'header.title': 'ZeroHub',
     'header.catalog': 'Каталог',
     'header.compare': 'Салыстыру',
+    'header.favorites': 'Таңдаулылар',
     
     // HomePage
     'home.title': 'Университеттер каталогы',
@@ -142,6 +153,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'card.chanceForGrant': 'Грантқа мүмкіндік',
     'card.onlyPaid': 'Тек ақылы',
     'card.cost': 'Бағасы:',
+    'card.addToFavorites': 'Таңдаулыларға қосу',
+    'card.removeFromFavorites': 'Таңдаулылардан алып тастау',
     'card.minScore': 'Грантқа өту баллы:',
     'card.tour': '360° Тур',
     
@@ -163,6 +176,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'details.details.no': 'Жоқ',
     'details.addToCompare': 'Салыстыруға қосу',
     'details.alreadyInCompare': 'Қазірдің өзінде салыстыруда',
+    'details.addToFavorites': 'Таңдаулыларға қосу',
+    'details.removeFromFavorites': 'Таңдаулылардан алып тастау',
     'details.virtualTour': 'Виртуалды тур',
     'details.virtualTourTitle': 'Виртуалды тур:',
     'details.openInNewWindow': 'Толық терезеде ашу',
@@ -184,12 +199,18 @@ const translations: Record<Locale, Record<string, string>> = {
     'compare.public': 'Мемлекеттік',
     'compare.languages': 'Оқыту тілі',
     'compare.grantsPerYear': 'Жылына грант',
+    
+    // Favorites
+    'favorites.title': 'Таңдаулылар',
+    'favorites.empty': 'Сізде әлі таңдаулы университеттер жоқ',
+    'favorites.remove': 'Таңдаулылардан алып тастау',
   },
   en: {
     // Header
     'header.title': 'ZeroHub',
     'header.catalog': 'Catalog',
     'header.compare': 'Compare',
+    'header.favorites': 'Favorites',
     
     // HomePage
     'home.title': 'University Catalog',
@@ -229,6 +250,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'card.cost': 'Cost:',
     'card.minScore': 'Min Score:',
     'card.tour': '360° Tour',
+    'card.addToFavorites': 'Add to Favorites',
+    'card.removeFromFavorites': 'Remove from Favorites',
     
     // UniversityDetailsPage
     'details.back': 'Back to Catalog',
@@ -248,6 +271,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'details.details.no': 'No',
     'details.addToCompare': 'Add to Compare',
     'details.alreadyInCompare': 'Already in Compare',
+    'details.addToFavorites': 'Add to Favorites',
+    'details.removeFromFavorites': 'Remove from Favorites',
     'details.virtualTour': 'Virtual Tour',
     'details.virtualTourTitle': 'Virtual Tour:',
     'details.openInNewWindow': 'Open in full window',
@@ -269,6 +294,11 @@ const translations: Record<Locale, Record<string, string>> = {
     'compare.public': 'Public',
     'compare.languages': 'Language of Instruction',
     'compare.grantsPerYear': 'Grants per Year',
+    
+    // Favorites
+    'favorites.title': 'Favorites',
+    'favorites.empty': 'You have no favorite universities yet',
+    'favorites.remove': 'Remove from Favorites',
   },
 };
 

@@ -1,7 +1,8 @@
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, Star, Check, X, Play, ExternalLink } from 'lucide-react';
+import { ArrowLeft, MapPin, Star, Check, X, Play, ExternalLink, Heart } from 'lucide-react';
 import { universities } from '../data/mockData';
 import { useCompareStore } from '../store/useCompareStore';
+import { useFavoritesStore } from '../store/useFavoritesStore';
 import { useLocale } from '@/components/LocaleProvider';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,8 +19,19 @@ const UniversityDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const university = universities.find((u) => u.id === id);
   const { addToCompare, compareList } = useCompareStore();
+  const { addToFavorites, removeFromFavorites, isFavorite } = useFavoritesStore();
   const { t } = useLocale();
   const isInCompare = compareList.some((u) => u.id === id);
+  const isFav = id ? isFavorite(id) : false;
+
+  const handleFavoriteToggle = () => {
+    if (!university) return;
+    if (isFav) {
+      removeFromFavorites(university.id);
+    } else {
+      addToFavorites(university);
+    }
+  };
 
   if (!university) {
     return (
@@ -136,6 +148,14 @@ const UniversityDetailsPage = () => {
           className="w-full sm:w-auto"
         >
           {isInCompare ? t('details.alreadyInCompare') : t('details.addToCompare')}
+        </Button>
+        <Button
+          onClick={handleFavoriteToggle}
+          variant={isFav ? 'default' : 'outline'}
+          className={`w-full sm:w-auto ${isFav ? 'bg-red-500 hover:bg-red-600' : ''}`}
+        >
+          <Heart className={`w-4 h-4 mr-2 ${isFav ? 'fill-current' : ''}`} />
+          {isFav ? t('details.removeFromFavorites') : t('details.addToFavorites')}
         </Button>
         {university.hasTour && university.tourUrl && (
           <Dialog>
