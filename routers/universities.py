@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from models import University, Program, AdmissionInfo
-from requests import UniversityRequest, ProgramRequest, AdmissionInfoRequest
+from requests import UniversityRequest, ProgramRequest, AdmissionInfoRequest, AIRequest
 from database import SessionLocal
+from groq import requestAI
 
 router = APIRouter()
 
@@ -139,4 +140,13 @@ async def delete_admission(db: db_dependency, admission_id: int = Path(gt=0)):
         raise HTTPException(status_code=404, detail='university not found')
     db.query(AdmissionInfo).filter(AdmissionInfo.id == admission_id).delete()
     db.commit()
+
+
+#ai
+@router.post('/ai', tags=['Ai'])
+async def request_ai(ai_request: AIRequest):
+    data = ai_request.model_dump()
+    prompt = f"{data['template']}\n{data['text']}"
+    response = requestAI(prompt)
+    return response
 

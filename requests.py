@@ -19,3 +19,7 @@ class ProgramRequest(BaseModel):
 class AdmissionInfoRequest(BaseModel):
     deadline_date: date | None = None
     requirements_text: str
+
+class AIRequest(BaseModel):
+    template: str
+    text: str
