@@ -65,3 +65,41 @@ export interface IAdvisorResponse {
   short_reason: string;
 }
 
+// Типы для API ответов бэкенда
+export interface IBackendUniversity {
+  id: number;
+  name: string;
+  description: string;
+  mission_text: string;
+  history: string;
+  min_ent_score: number;
+  logo_url: string;
+  tour_url: string | null;
+  city: string;
+  has_dormitory: boolean;
+  rating: number;
+  has_tour: boolean;
+  languages: string; // JSON строка или разделенная запятыми
+  number_of_grants: number;
+  exchange_program: boolean;
+  double_degree_program: boolean;
+  IELTS_sertificate: boolean;
+  format: string; // "private" или "public"
+  price: number;
+}
+
+export interface IBackendProgram {
+  id: number;
+  university_id: number;
+  name: string;
+  description: string;
+  degree: string;
+  price: number;
+  duration: number;
+  language: string;
+  min_ent_score: number;
+  internship: boolean;
+  double_degree_program: boolean;
+  employment: number;
+}
+

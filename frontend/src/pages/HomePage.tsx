@@ -24,13 +24,12 @@ import {
   PaginationEllipsis,
 } from '@/components/ui/pagination';
 import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
-import { universities } from '../data/mockData';
 import { useCompareStore } from '../store/useCompareStore';
 import { useLocale } from '@/components/LocaleProvider';
 import UniversityCard from '@/components/UniversityCard';
 import AdvisorModal from '@/components/AdvisorModal';
-import { getAiRecommendation } from '../api/universityService';
-import type { IAdvisorRequest, IAdvisorResponse } from '../types';
+import { getAiRecommendation, getUniversities } from '../api/universityService';
+import type { IAdvisorRequest, IAdvisorResponse, IUniversity } from '../types';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -122,8 +121,11 @@ const DEGREES = [
 ];
 
 // Минимальная и максимальная стоимость из данных
-const getPriceRange = (universitiesList: typeof universities) => {
-  const prices = universitiesList.map((u) => u.price);
+const getPriceRange = (universitiesList: IUniversity[]) => {
+  if (universitiesList.length === 0) {
+    return { min: 0, max: 10000000 };
+  }
+  const prices = universitiesList.map((u: IUniversity) => u.price);
   const min = Math.min(...prices);
   const max = Math.max(...prices);
   // Увеличиваем максимальное значение для возможности фильтрации выше текущего максимума
@@ -154,11 +156,27 @@ const HomePage = () => {
   const [filtersVisible, setFiltersVisible] = useState<boolean>(true);
   const [isAdvisorModalOpen, setIsAdvisorModalOpen] = useState<boolean>(false);
   const [advisorRecommendation, setAdvisorRecommendation] = useState<IAdvisorResponse | null>(null);
+  const [universities, setUniversities] = useState<IUniversity[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Инициализация диапазона цен
+  // Загрузка университетов с API
   useEffect(() => {
-    const range = getPriceRange(universities);
-    setPriceRange([range.min, range.max]);
+    const loadUniversities = async () => {
+      setIsLoading(true);
+      try {
+        const data = await getUniversities();
+        setUniversities(data);
+        // Инициализация диапазона цен после загрузки
+        const range = getPriceRange(data);
+        setPriceRange([range.min, range.max]);
+      } catch (error) {
+        console.error('Ошибка при загрузке университетов:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUniversities();
   }, []);
 
   // Получаем уникальные города
@@ -407,7 +425,7 @@ const HomePage = () => {
       u.name.toLowerCase().includes(normalizedName) || 
       normalizedName.includes(u.name.toLowerCase())
     );
-  }, []);
+  }, [universities]);
 
   const handleGoToUniversity = useCallback(() => {
     if (advisorRecommendation) {
@@ -782,7 +800,13 @@ const HomePage = () => {
 
       {/* Результаты */}
       <div className="flex flex-col gap-4">
-        {filteredUniversities.length > 0 ? (
+        {isLoading ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">Загрузка университетов...</p>
+            </CardContent>
+          </Card>
+        ) : filteredUniversities.length > 0 ? (
           <>
             {paginatedUniversities.map((university) => (
               <UniversityCard
