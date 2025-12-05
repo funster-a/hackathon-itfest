@@ -549,10 +549,11 @@ const HomePage = () => {
         {/* Абитуриент-Советник - справа */}
         <Card>
           <CardHeader>
-            <h2 className="text-lg font-semibold">{t('advisor.title')}</h2>
+            <h2 className="text-lg font-semibold p-0.5">{t('advisor.title')}</h2>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-2">
+          <CardContent className="pb-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t('advisor.description')}</label>
               <Input
                 type="number"
                 value={entScoreInput}
@@ -562,9 +563,6 @@ const HomePage = () => {
                 placeholder={t('advisor.inputPlaceholder')}
                 className="w-full"
               />
-              <p className="text-sm text-muted-foreground">
-                {t('advisor.description')}
-              </p>
             </div>
           </CardContent>
         </Card>
