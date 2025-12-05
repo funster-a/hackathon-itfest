@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Container, Typography, Box, Paper, TextField, Chip, Stack } from '@mui/material';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { universities } from '../data/mockData';
 import { useCompareStore } from '../store/useCompareStore';
+import UniversityCard from '@/components/UniversityCard';
 
 const HomePage = () => {
   const { userEntScore, setEntScore } = useCompareStore();
@@ -17,73 +18,42 @@ const HomePage = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Каталог университетов
-      </Typography>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-3xl font-bold tracking-tight mb-8">Каталог университетов</h1>
 
       {/* Блок фильтрации */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Абитуриент-Советник
-        </Typography>
-        <TextField
-          label="Твой балл ЕНТ"
-          type="number"
-          value={entScoreInput}
-          onChange={(e) => handleEntScoreChange(e.target.value)}
-          inputProps={{ min: 0, max: 140 }}
-          sx={{ width: 300 }}
-          helperText="Введите ваш балл ЕНТ (0-140) для расчета шансов на грант"
-        />
-      </Paper>
+      <Card className="mb-6">
+        <CardHeader>
+          <h2 className="text-lg font-semibold">Абитуриент-Советник</h2>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-2">
+            <Input
+              type="number"
+              value={entScoreInput}
+              onChange={(e) => handleEntScoreChange(e.target.value)}
+              min="0"
+              max="140"
+              placeholder="Твой балл ЕНТ"
+              className="w-full sm:w-80"
+            />
+            <p className="text-sm text-muted-foreground">
+              Введите ваш балл ЕНТ (0-140) для расчета шансов на грант
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {universities.map((university) => {
-          const hasChance = userEntScore !== null && userEntScore >= university.minEntScore;
-          const showIndicator = userEntScore !== null;
-
-          return (
-            <Paper key={university.id} sx={{ p: 3 }}>
-              <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="h5" component="h2" sx={{ flexGrow: 1 }}>
-                  <Link
-                    to={`/university/${university.id}`}
-                    style={{ textDecoration: 'none', color: 'inherit' }}
-                  >
-                    {university.name}
-                  </Link>
-                </Typography>
-                {showIndicator && (
-                  <Chip
-                    label={hasChance ? 'Шанс на грант' : 'Только платно'}
-                    color={hasChance ? 'success' : 'warning'}
-                    size="medium"
-                  />
-                )}
-              </Stack>
-              <Typography variant="body1" color="text.secondary" paragraph>
-                {university.description}
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                <Typography variant="body2">
-                  <strong>Город:</strong> {university.city}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Стоимость:</strong> {university.price.toLocaleString()} ₸
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Проходной балл на грант:</strong> {university.minEntScore}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Рейтинг:</strong> {university.rating}/5
-                </Typography>
-              </Box>
-            </Paper>
-          );
-        })}
-      </Box>
-    </Container>
+      <div className="flex flex-col gap-4">
+        {universities.map((university) => (
+          <UniversityCard
+            key={university.id}
+            university={university}
+            userEntScore={userEntScore}
+          />
+        ))}
+      </div>
+    </div>
   );
 };
 
