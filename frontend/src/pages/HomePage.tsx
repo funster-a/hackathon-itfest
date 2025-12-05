@@ -3,6 +3,15 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import {
   Pagination,
   PaginationContent,
@@ -12,7 +21,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from '@/components/ui/pagination';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, ChevronDown } from 'lucide-react';
 import { universities } from '../data/mockData';
 import { useCompareStore } from '../store/useCompareStore';
 import { useLocale } from '@/components/LocaleProvider';
@@ -20,15 +29,39 @@ import UniversityCard from '@/components/UniversityCard';
 
 const ITEMS_PER_PAGE = 9;
 
+// Моковые данные для фильтров
+const ACADEMIC_DISCIPLINES = [
+  'Информационные технологии',
+  'Инженерия',
+  'Бизнес и экономика',
+  'Медицина',
+  'Гуманитарные науки',
+  'Естественные науки',
+  'Право',
+  'Педагогика',
+  'Архитектура',
+  'Дизайн',
+];
+
+const DEGREES = [
+  'Бакалавриат',
+  'Магистратура',
+  'Докторантура',
+];
+
 const HomePage = () => {
   const { userEntScore, setEntScore } = useCompareStore();
   const { t } = useLocale();
   const [entScoreInput, setEntScoreInput] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
-  const [hasDormitory, setHasDormitory] = useState<boolean | null>(null);
-  const [hasMilitaryDept, setHasMilitaryDept] = useState<boolean | null>(null);
+  const [hasDormitory, setHasDormitory] = useState<boolean>(false);
+  const [hasMilitaryDept, setHasMilitaryDept] = useState<boolean>(false);
+  const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>([]);
+  const [selectedDegrees, setSelectedDegrees] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [disciplinesOpen, setDisciplinesOpen] = useState<boolean>(false);
+  const [degreesOpen, setDegreesOpen] = useState<boolean>(false);
 
   // Получаем уникальные города
   const cities = useMemo(() => {
@@ -70,7 +103,7 @@ const HomePage = () => {
   // Сброс страницы при изменении фильтров
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCity, hasDormitory, hasMilitaryDept]);
+  }, [searchQuery, selectedCity, hasDormitory, hasMilitaryDept, selectedDisciplines, selectedDegrees]);
 
   // Вычисление пагинации
   const totalPages = Math.ceil(filteredUniversities.length / ITEMS_PER_PAGE);
@@ -92,11 +125,34 @@ const HomePage = () => {
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCity(null);
-    setHasDormitory(null);
-    setHasMilitaryDept(null);
+    setHasDormitory(false);
+    setHasMilitaryDept(false);
+    setSelectedDisciplines([]);
+    setSelectedDegrees([]);
   };
 
-  const hasActiveFilters = selectedCity !== null || hasDormitory !== null || hasMilitaryDept !== null;
+  const hasActiveFilters = 
+    selectedCity !== null || 
+    hasDormitory || 
+    hasMilitaryDept || 
+    selectedDisciplines.length > 0 || 
+    selectedDegrees.length > 0;
+
+  const toggleDiscipline = (discipline: string) => {
+    setSelectedDisciplines((prev) =>
+      prev.includes(discipline)
+        ? prev.filter((d) => d !== discipline)
+        : [...prev, discipline]
+    );
+  };
+
+  const toggleDegree = (degree: string) => {
+    setSelectedDegrees((prev) =>
+      prev.includes(degree)
+        ? prev.filter((d) => d !== degree)
+        : [...prev, degree]
+    );
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -165,52 +221,110 @@ const HomePage = () => {
 
             <Separator />
 
-            {/* Фильтр по общежитию */}
+            {/* Фильтр по академическим дисциплинам */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t('filters.dormitory')}</label>
-              <div className="flex gap-2">
-                <Button
-                  variant={hasDormitory === true ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setHasDormitory(hasDormitory === true ? null : true)}
-                  className="flex-1"
+              <label className="text-sm font-medium">{t('filters.disciplines')}</label>
+              <DropdownMenu 
+                modal={false} 
+                open={disciplinesOpen} 
+                onOpenChange={setDisciplinesOpen}
+              >
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    {selectedDisciplines.length > 0
+                      ? `${selectedDisciplines.length} ${t('filters.selected')}`
+                      : t('filters.selectDisciplines')}
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  className="w-56 max-h-[300px] overflow-y-auto"
+                  onCloseAutoFocus={(e) => e.preventDefault()}
                 >
-                  {t('filters.dormitoryYes')}
-                </Button>
-                <Button
-                  variant={hasDormitory === false ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setHasDormitory(hasDormitory === false ? null : false)}
-                  className="flex-1"
-                >
-                  {t('filters.dormitoryNo')}
-                </Button>
-              </div>
+                  <DropdownMenuLabel>{t('filters.disciplines')}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {ACADEMIC_DISCIPLINES.map((discipline) => (
+                    <DropdownMenuCheckboxItem
+                      key={discipline}
+                      checked={selectedDisciplines.includes(discipline)}
+                      onCheckedChange={() => toggleDiscipline(discipline)}
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      {discipline}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <Separator />
 
-            {/* Фильтр по военной кафедре */}
+            {/* Фильтр по научным степеням */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t('filters.militaryDept')}</label>
-              <div className="flex gap-2">
-                <Button
-                  variant={hasMilitaryDept === true ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setHasMilitaryDept(hasMilitaryDept === true ? null : true)}
-                  className="flex-1"
+              <label className="text-sm font-medium">{t('filters.degrees')}</label>
+              <DropdownMenu 
+                modal={false} 
+                open={degreesOpen} 
+                onOpenChange={setDegreesOpen}
+              >
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    {selectedDegrees.length > 0
+                      ? `${selectedDegrees.length} ${t('filters.selected')}`
+                      : t('filters.selectDegrees')}
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  className="w-56"
+                  onCloseAutoFocus={(e) => e.preventDefault()}
                 >
-                  {t('filters.militaryDeptYes')}
-                </Button>
-                <Button
-                  variant={hasMilitaryDept === false ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setHasMilitaryDept(hasMilitaryDept === false ? null : false)}
-                  className="flex-1"
-                >
-                  {t('filters.militaryDeptNo')}
-                </Button>
-              </div>
+                  <DropdownMenuLabel>{t('filters.degrees')}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {DEGREES.map((degree) => (
+                    <DropdownMenuCheckboxItem
+                      key={degree}
+                      checked={selectedDegrees.includes(degree)}
+                      onCheckedChange={() => toggleDegree(degree)}
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      {degree}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <Separator />
+
+            {/* Фильтр по общежитию - чекбокс */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="dormitory"
+                checked={hasDormitory}
+                onCheckedChange={(checked) => setHasDormitory(checked === true)}
+              />
+              <label
+                htmlFor="dormitory"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                {t('filters.dormitory')}
+              </label>
+            </div>
+
+            {/* Фильтр по военной кафедре - чекбокс */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="militaryDept"
+                checked={hasMilitaryDept}
+                onCheckedChange={(checked) => setHasMilitaryDept(checked === true)}
+              />
+              <label
+                htmlFor="militaryDept"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                {t('filters.militaryDept')}
+              </label>
             </div>
           </CardContent>
         </Card>
