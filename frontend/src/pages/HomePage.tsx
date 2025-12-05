@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,11 +23,14 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from '@/components/ui/pagination';
-import { Search, Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { universities } from '../data/mockData';
 import { useCompareStore } from '../store/useCompareStore';
 import { useLocale } from '@/components/LocaleProvider';
 import UniversityCard from '@/components/UniversityCard';
+import AdvisorModal from '@/components/AdvisorModal';
+import { getAiRecommendation } from '../api/universityService';
+import type { IAdvisorRequest, IAdvisorResponse } from '../types';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -132,6 +136,7 @@ const getPriceRange = (universitiesList: typeof universities) => {
 const HomePage = () => {
   const { userEntScore, setEntScore } = useCompareStore();
   const { t } = useLocale();
+  const navigate = useNavigate();
   const [entScoreInput, setEntScoreInput] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
@@ -145,6 +150,8 @@ const HomePage = () => {
   const [professionsOpen, setProfessionsOpen] = useState<boolean>(false);
   const [degreesOpen, setDegreesOpen] = useState<boolean>(false);
   const [filtersVisible, setFiltersVisible] = useState<boolean>(true);
+  const [isAdvisorModalOpen, setIsAdvisorModalOpen] = useState<boolean>(false);
+  const [advisorRecommendation, setAdvisorRecommendation] = useState<IAdvisorResponse | null>(null);
 
   // Инициализация диапазона цен
   useEffect(() => {
@@ -273,6 +280,43 @@ const HomePage = () => {
         ? prev.filter((d) => d !== degree)
         : [...prev, degree]
     );
+  };
+
+  const handleAdvisorRecommend = async (data: IAdvisorRequest) => {
+    try {
+      const response = await getAiRecommendation(data);
+      setAdvisorRecommendation(response);
+      setIsAdvisorModalOpen(false);
+    } catch (error) {
+      console.error('Ошибка при получении рекомендации:', error);
+    }
+  };
+
+  const findUniversityByName = (name: string) => {
+    // Нечеткий поиск по названию
+    const normalizedName = name.toLowerCase().trim();
+    return universities.find((u) => 
+      u.name.toLowerCase().includes(normalizedName) || 
+      normalizedName.includes(u.name.toLowerCase())
+    );
+  };
+
+  const handleGoToUniversity = () => {
+    if (advisorRecommendation) {
+      const university = findUniversityByName(advisorRecommendation.university_name);
+      if (university) {
+        navigate(`/university/${university.id}`);
+      } else {
+        // Если не нашли, попробуем найти по частичному совпадению
+        const partialMatch = universities.find((u) => 
+          advisorRecommendation.university_name.toLowerCase().includes(u.name.toLowerCase().substring(0, 10)) ||
+          u.name.toLowerCase().includes(advisorRecommendation.university_name.toLowerCase().substring(0, 10))
+        );
+        if (partialMatch) {
+          navigate(`/university/${partialMatch.id}`);
+        }
+      }
+    }
   };
 
   return (
@@ -531,17 +575,49 @@ const HomePage = () => {
             <h2 className="text-lg font-semibold p-0.5">{t('advisor.title')}</h2>
           </CardHeader>
           <CardContent className="pb-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t('advisor.description')}</label>
-              <Input
-                type="number"
-                value={entScoreInput}
-                onChange={(e) => handleEntScoreChange(e.target.value)}
-                min="0"
-                max="140"
-                placeholder={t('advisor.inputPlaceholder')}
-                className="w-full"
-              />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('advisor.description')}</label>
+                <Input
+                  type="number"
+                  value={entScoreInput}
+                  onChange={(e) => handleEntScoreChange(e.target.value)}
+                  min="0"
+                  max="140"
+                  placeholder={t('advisor.inputPlaceholder')}
+                  className="w-full"
+                />
+              </div>
+              <Button
+                onClick={() => setIsAdvisorModalOpen(true)}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Подобрать с ИИ
+              </Button>
+
+              {/* Результат ИИ-Советника */}
+              {advisorRecommendation && (
+                <>
+                  <Separator />
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+                        Твой идеальный выбор: {advisorRecommendation.university_name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {advisorRecommendation.short_reason}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleGoToUniversity}
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                    >
+                      Перейти к университету
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -671,6 +747,13 @@ const HomePage = () => {
           </Card>
         )}
       </div>
+
+      {/* Модальное окно ИИ-Советника */}
+      <AdvisorModal
+        isOpen={isAdvisorModalOpen}
+        onClose={() => setIsAdvisorModalOpen(false)}
+        onRecommend={handleAdvisorRecommend}
+      />
     </div>
   );
 };

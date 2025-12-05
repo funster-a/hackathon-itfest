@@ -5,10 +5,10 @@ export interface IAcademicProgram {
   duration?: number; // Продолжительность в годах
   language?: string; // Язык обучения
   tuitionFee?: number; // Стоимость обучения для программы
-  minEntScore?: number; // Минимальный балл ЕНТ
+  minEntScore?: number | null; // Минимальный балл ЕНТ
   hasInternship?: boolean; // Наличие практики/стажировки
   hasDoubleDegree?: boolean; // Возможность двойного диплома
-  employmentRate?: number; // Процент трудоустройства после выпуска
+  employmentRate?: number | null; // Процент трудоустройства после выпуска
 }
 
 export interface IAdmissions {
@@ -48,5 +48,18 @@ export interface IUniversity {
   international?: IInternational;
   mission?: string;
   history?: string;
+}
+
+export interface IAdvisorRequest {
+  ent_score: number;
+  profile_subjects: string;
+  interests: string;
+  preferred_city: string;
+  career_goal: string;
+}
+
+export interface IAdvisorResponse {
+  university_name: string;
+  short_reason: string;
 }
 

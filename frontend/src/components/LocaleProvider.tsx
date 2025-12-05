@@ -11,7 +11,7 @@ interface LocaleProviderProps {
 interface LocaleProviderState {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string>) => string;
 }
 
 const translations: Record<Locale, Record<string, string>> = {
