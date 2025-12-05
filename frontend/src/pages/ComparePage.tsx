@@ -1,119 +1,133 @@
 import { Link } from 'react-router-dom';
-import { Container, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Box } from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
-import CloseIcon from '@mui/icons-material/Close';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { Trash2, Check, X, ArrowLeft } from 'lucide-react';
 import { useCompareStore } from '../store/useCompareStore';
+import { useLocale } from '@/components/LocaleProvider';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 
 const ComparePage = () => {
   const { compareList, removeFromCompare } = useCompareStore();
+  const { t } = useLocale();
 
   if (compareList.length === 0) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Сравнение университетов
-        </Typography>
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
-          <Typography variant="body1" color="text.secondary">
-            Добавьте вузы для сравнения
-          </Typography>
-          <Button component={Link} to="/" variant="contained" sx={{ mt: 2 }}>
-            Перейти к каталогу
-          </Button>
-        </Paper>
-      </Container>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-3xl font-bold tracking-tight mb-8">{t('compare.title')}</h1>
+        <Card>
+          <CardContent className="p-12 text-center">
+            <p className="text-muted-foreground mb-6">{t('compare.empty')}</p>
+            <Button asChild>
+              <Link to="/">{t('compare.goToCatalog')}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Сравнение университетов
-      </Typography>
-      <TableContainer component={Paper} sx={{ mt: 3 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 'bold' }}>Параметр</TableCell>
-              {compareList.map((university) => (
-                <TableCell key={university.id} sx={{ fontWeight: 'bold' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Link
-                      to={`/university/${university.id}`}
-                      style={{ textDecoration: 'none', color: 'inherit' }}
-                    >
-                      {university.name}
-                    </Link>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => removeFromCompare(university.id)}
-                      sx={{ ml: 1 }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 'bold' }}>Город</TableCell>
-              {compareList.map((university) => (
-                <TableCell key={university.id}>{university.city}</TableCell>
-              ))}
-            </TableRow>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 'bold' }}>Стоимость</TableCell>
-              {compareList.map((university) => (
-                <TableCell key={university.id}>{university.price.toLocaleString()} ₸</TableCell>
-              ))}
-            </TableRow>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 'bold' }}>Рейтинг</TableCell>
-              {compareList.map((university) => (
-                <TableCell key={university.id}>{university.rating}/5</TableCell>
-              ))}
-            </TableRow>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 'bold' }}>Проходной балл на грант</TableCell>
-              {compareList.map((university) => (
-                <TableCell key={university.id}>{university.minEntScore}</TableCell>
-              ))}
-            </TableRow>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 'bold' }}>Общежитие</TableCell>
-              {compareList.map((university) => (
-                <TableCell key={university.id}>
-                  {university.hasDormitory ? (
-                    <CheckIcon color="success" />
-                  ) : (
-                    <CloseIcon color="error" />
-                  )}
-                </TableCell>
-              ))}
-            </TableRow>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 'bold' }}>Военная кафедра</TableCell>
-              {compareList.map((university) => (
-                <TableCell key={university.id}>
-                  {university.hasMilitaryDept ? (
-                    <CheckIcon color="success" />
-                  ) : (
-                    <CloseIcon color="error" />
-                  )}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <Button component={Link} to="/" variant="outlined" sx={{ mt: 3 }}>
-        Вернуться к каталогу
-      </Button>
-    </Container>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-3xl font-bold tracking-tight mb-8">{t('compare.title')}</h1>
+      <Card>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[200px]">{t('compare.parameter')}</TableHead>
+                {compareList.map((university) => (
+                  <TableHead key={university.id}>
+                    <div className="flex items-center justify-between">
+                      <Link
+                        to={`/university/${university.id}`}
+                        className="text-foreground hover:text-foreground/80 transition-colors"
+                      >
+                        {university.name}
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeFromCompare(university.id)}
+                        className="ml-4 h-8 w-8"
+                        aria-label="Удалить из сравнения"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">{t('compare.city')}</TableCell>
+                {compareList.map((university) => (
+                  <TableCell key={university.id}>{university.city}</TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">{t('compare.cost')}</TableCell>
+                {compareList.map((university) => (
+                  <TableCell key={university.id}>
+                    {university.price.toLocaleString()} ₸
+                  </TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">{t('compare.rating')}</TableCell>
+                {compareList.map((university) => (
+                  <TableCell key={university.id}>{university.rating}/5</TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">{t('compare.minScore')}</TableCell>
+                {compareList.map((university) => (
+                  <TableCell key={university.id}>{university.minEntScore}</TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">{t('compare.dormitory')}</TableCell>
+                {compareList.map((university) => (
+                  <TableCell key={university.id}>
+                    {university.hasDormitory ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <X className="w-5 h-5 text-red-600" />
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">{t('compare.militaryDept')}</TableCell>
+                {compareList.map((university) => (
+                  <TableCell key={university.id}>
+                    {university.hasMilitaryDept ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <X className="w-5 h-5 text-red-600" />
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+      <Link
+        to="/"
+        className="inline-flex items-center mt-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        {t('compare.backToCatalog')}
+      </Link>
+    </div>
   );
 };
 

@@ -8,5 +8,8 @@ export interface IUniversity {
   hasDormitory: boolean;
   hasMilitaryDept: boolean;
   rating: number;
+  hasTour?: boolean;
+  tourUrl?: string;
+  imageUrl?: string;
 }
 
