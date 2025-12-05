@@ -32,12 +32,24 @@ const UniversityDetailsPage = () => {
         <Typography variant="body1" paragraph sx={{ mt: 2 }}>
           {university.description}
         </Typography>
-        <Box sx={{ mt: 3 }}>
+        <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 1 }}>
           <Typography variant="body1">
             <strong>Город:</strong> {university.city}
           </Typography>
-          <Typography variant="body1" sx={{ mt: 1 }}>
+          <Typography variant="body1">
             <strong>Стоимость обучения:</strong> {university.price.toLocaleString()} ₸
+          </Typography>
+          <Typography variant="body1">
+            <strong>Проходной балл на грант:</strong> {university.minEntScore}
+          </Typography>
+          <Typography variant="body1">
+            <strong>Рейтинг:</strong> {university.rating}/5
+          </Typography>
+          <Typography variant="body1">
+            <strong>Общежитие:</strong> {university.hasDormitory ? 'Да' : 'Нет'}
+          </Typography>
+          <Typography variant="body1">
+            <strong>Военная кафедра:</strong> {university.hasMilitaryDept ? 'Да' : 'Нет'}
           </Typography>
         </Box>
         <Button

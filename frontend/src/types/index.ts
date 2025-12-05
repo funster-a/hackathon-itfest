@@ -4,5 +4,9 @@ export interface IUniversity {
   description: string;
   city: string;
   price: number;
+  minEntScore: number;
+  hasDormitory: boolean;
+  hasMilitaryDept: boolean;
+  rating: number;
 }
 

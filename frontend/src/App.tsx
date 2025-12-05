@@ -8,7 +8,10 @@ import ComparePage from './pages/ComparePage';
 
 const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
+    primary: {
+      main: '#90caf9',
+    },
   },
 });
 
