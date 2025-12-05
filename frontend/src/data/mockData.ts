@@ -1,0 +1,70 @@
+import type { IUniversity } from '../types';
+
+const baseUniversities: IUniversity[] = [
+  {
+    id: '1',
+    name: 'KIMEP University',
+    description: 'Ведущий университет Казахстана, специализирующийся на бизнесе, экономике и международных отношениях. Предлагает программы на английском языке и международную аккредитацию.',
+    city: 'Алматы',
+    price: 4500000,
+    minEntScore: 110,
+    hasDormitory: true,
+    hasMilitaryDept: false,
+    rating: 4.8,
+    hasTour: true,
+    tourUrl: 'https://kaznpu.kz/VirtualTour/index_ru.html',
+    imageUrl: 'https://www.kimep.kz/prospective-students/wp-content/blogs.dir/184/files/2018/04/default-1.jpg',
+  },
+  {
+    id: '2',
+    name: 'Turan University',
+    description: 'Международный университет, предлагающий широкий спектр программ в области инженерии, бизнеса, медицины и гуманитарных наук. Известен качественным образованием и современной инфраструктурой.',
+    city: 'Алматы',
+    price: 1200000,
+    minEntScore: 70,
+    hasDormitory: true,
+    hasMilitaryDept: true,
+    rating: 4.2,
+    hasTour: true,
+    tourUrl: 'https://turan.edu.kz/3d/',
+    imageUrl: 'https://turan.edu.kz/wp-content/uploads/2023/02/ob-universitete-oblozhka-scaled.jpg',
+  },
+  {
+    id: '3',
+    name: 'Al-Farabi KazNU',
+    description: 'Крупнейший университет Казахстана, один из ведущих научно-образовательных центров Центральной Азии. Предлагает широкий спектр программ бакалавриата и магистратуры.',
+    city: 'Алматы',
+    price: 1500000,
+    minEntScore: 120,
+    hasDormitory: true,
+    hasMilitaryDept: true,
+    rating: 4.9,
+    hasTour: true,
+    tourUrl: 'https://elibrary.kaznu.kz/3dtour/index.html',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/72/Al-Farabi_KazNU_rektorat.jpg',
+  },
+  {
+    id: '4',
+    name: 'Nazarbayev University',
+    description: 'Флагманский университет Казахстана, созданный по модели ведущих мировых университетов. Предлагает программы бакалавриата и магистратуры на английском языке с международными стандартами образования.',
+    city: 'Нур-Султан',
+    price: 6000000,
+    minEntScore: 130,
+    hasDormitory: true,
+    hasMilitaryDept: false,
+    rating: 5.0,
+    hasTour: true,
+    tourUrl: 'https://nu.edu.kz/ru/campus/campustour',
+    imageUrl: 'https://www.gov.kz/uploads/2023/7/21/ed7fc6cd24f0b5de4a4cf506fbc56d30_original.250304.jpg',
+  },
+];
+
+// Дублируем университеты для тестирования пагинации (всего ~20 университетов)
+export const universities: IUniversity[] = [
+  ...baseUniversities,
+  ...baseUniversities.map((u, index) => ({ ...u, id: `${u.id}-copy-${index + 1}` })),
+  ...baseUniversities.map((u, index) => ({ ...u, id: `${u.id}-copy-${index + 5}` })),
+  ...baseUniversities.map((u, index) => ({ ...u, id: `${u.id}-copy-${index + 9}` })),
+  ...baseUniversities.map((u, index) => ({ ...u, id: `${u.id}-copy-${index + 13}` })),
+];
+
