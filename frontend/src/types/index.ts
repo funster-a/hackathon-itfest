@@ -1,3 +1,32 @@
+export interface IAcademicProgram {
+  name: string;
+  degree: 'Bachelor' | 'Master' | 'PhD';
+  description?: string;
+  duration?: number; // Продолжительность в годах
+  language?: string; // Язык обучения
+  tuitionFee?: number; // Стоимость обучения для программы
+  minEntScore?: number | null; // Минимальный балл ЕНТ
+  hasInternship?: boolean; // Наличие практики/стажировки
+  hasDoubleDegree?: boolean; // Возможность двойного диплома
+  employmentRate?: number | null; // Процент трудоустройства после выпуска
+}
+
+export interface IAdmissions {
+  requirements: string[];
+  deadlines: string[];
+  scholarships: string[];
+  procedure: string;
+}
+
+export interface IInternational {
+  exchangePrograms: string[];
+  partners: string[];
+  foreignStudentOpps: string[];
+  hasExchangeProgram?: boolean;
+  hasDoubleDegree?: boolean;
+  requiresIELTS?: boolean;
+}
+
 export interface IUniversity {
   id: string;
   name: string;
@@ -14,5 +43,23 @@ export interface IUniversity {
   isPrivate?: boolean;
   languages?: string[];
   grantsPerYear?: number;
+  academicPrograms?: IAcademicProgram[];
+  admissions?: IAdmissions;
+  international?: IInternational;
+  mission?: string;
+  history?: string;
+}
+
+export interface IAdvisorRequest {
+  ent_score: number;
+  profile_subjects: string;
+  interests: string;
+  preferred_city: string;
+  career_goal: string;
+}
+
+export interface IAdvisorResponse {
+  university_name: string;
+  short_reason: string;
 }
 

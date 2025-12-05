@@ -23,3 +23,10 @@ class AdmissionInfoRequest(BaseModel):
 class AIRequest(BaseModel):
     template: str
     text: str
+
+class AdvisorRequest(BaseModel):
+    ent_score: int
+    profile_subjects: str
+    interests: str
+    preferred_city: str
+    career_goal: str

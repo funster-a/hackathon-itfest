@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from models import University, Program, AdmissionInfo
-from requests import UniversityRequest, ProgramRequest, AdmissionInfoRequest, AIRequest
+from requests import UniversityRequest, ProgramRequest, AdmissionInfoRequest, AIRequest, AdvisorRequest
 from database import SessionLocal
 from groq import requestAI
 
@@ -149,4 +149,88 @@ async def request_ai(ai_request: AIRequest):
     prompt = f"{data['template']}\n{data['text']}"
     response = requestAI(prompt)
     return response
+
+@router.post('/advisor/recommend', tags=['Advisor'])
+async def advisor_recommend(advisor_request: AdvisorRequest):
+    """
+    Рекомендация университета на основе данных абитуриента.
+    Возвращает название университета и краткое обоснование.
+    """
+    # Формируем промпт для ИИ
+    template = """Ты - ИИ-советник по выбору университета в Казахстане. 
+Проанализируй данные абитуриента и порекомендуй подходящий университет.
+
+Важно: Ответ должен быть в формате JSON:
+{
+    "university_name": "Название университета",
+    "short_reason": "Краткое обоснование рекомендации (2-3 предложения)"
+}
+
+Доступные университеты в Казахстане:
+- KIMEP University (Алматы) - бизнес, экономика, международные отношения
+- Turan University (Алматы) - инженерия, бизнес, медицина, гуманитарные науки
+- KBTU (Алматы) - инженерия, IT, бизнес
+- Nazarbayev University (Нур-Султан) - флагманский университет, все направления
+- КазНПУ имени Абая (Алматы) - педагогика, гуманитарные науки
+- Al-Farabi KazNU (Алматы) - крупнейший университет, все направления
+
+Учти:
+- Балл ЕНТ абитуриента
+- Профильные предметы
+- Интересы и хобби
+- Предпочтения по городу
+- Карьерные цели
+
+Ответь только JSON, без дополнительного текста."""
+
+    text = f"""Данные абитуриента:
+- Балл ЕНТ: {advisor_request.ent_score}
+- Профильные предметы: {advisor_request.profile_subjects}
+- Интересы/Хобби: {advisor_request.interests}
+- Желаемый город: {advisor_request.preferred_city}
+- Карьерная цель: {advisor_request.career_goal}
+
+Рекомендуй наиболее подходящий университет и обоснуй выбор."""
+
+    prompt = f"{template}\n\n{text}"
+    
+    import json
+    
+    try:
+        ai_response = requestAI(prompt)
+        
+        # Парсим JSON ответ от ИИ
+        # Убираем возможные markdown код блоки
+        cleaned_response = ai_response.strip()
+        if cleaned_response.startswith("```json"):
+            cleaned_response = cleaned_response[7:]
+        if cleaned_response.startswith("```"):
+            cleaned_response = cleaned_response[3:]
+        if cleaned_response.endswith("```"):
+            cleaned_response = cleaned_response[:-3]
+        cleaned_response = cleaned_response.strip()
+        
+        result = json.loads(cleaned_response)
+        
+        # Проверяем наличие нужных полей
+        if "university_name" not in result or "short_reason" not in result:
+            # Если ИИ вернул неполный ответ, формируем базовый
+            return {
+                "university_name": "KIMEP University",
+                "short_reason": ai_response[:200] if len(ai_response) > 200 else ai_response
+            }
+        
+        return result
+    except json.JSONDecodeError:
+        # Если не удалось распарсить JSON, возвращаем ответ как есть
+        return {
+            "university_name": "KIMEP University",
+            "short_reason": ai_response[:200] if len(ai_response) > 200 else ai_response
+        }
+    except Exception as e:
+        # В случае ошибки возвращаем базовый ответ
+        return {
+            "university_name": "KIMEP University",
+            "short_reason": f"Рекомендуем этот университет на основе ваших данных. Ошибка обработки: {str(e)}"
+        }
 
