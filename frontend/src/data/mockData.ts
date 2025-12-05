@@ -1,6 +1,6 @@
 import type { IUniversity } from '../types';
 
-export const universities: IUniversity[] = [
+const baseUniversities: IUniversity[] = [
   {
     id: '1',
     name: 'KIMEP University',
@@ -57,5 +57,14 @@ export const universities: IUniversity[] = [
     tourUrl: 'https://nu.edu.kz/ru/campus/campustour',
     imageUrl: 'https://www.gov.kz/uploads/2023/7/21/ed7fc6cd24f0b5de4a4cf506fbc56d30_original.250304.jpg',
   },
+];
+
+// Дублируем университеты для тестирования пагинации (всего ~20 университетов)
+export const universities: IUniversity[] = [
+  ...baseUniversities,
+  ...baseUniversities.map((u, index) => ({ ...u, id: `${u.id}-copy-${index + 1}` })),
+  ...baseUniversities.map((u, index) => ({ ...u, id: `${u.id}-copy-${index + 5}` })),
+  ...baseUniversities.map((u, index) => ({ ...u, id: `${u.id}-copy-${index + 9}` })),
+  ...baseUniversities.map((u, index) => ({ ...u, id: `${u.id}-copy-${index + 13}` })),
 ];
 

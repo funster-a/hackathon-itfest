@@ -1,13 +1,24 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from '@/components/ui/pagination';
 import { Search, Filter, X } from 'lucide-react';
 import { universities } from '../data/mockData';
 import { useCompareStore } from '../store/useCompareStore';
 import { useLocale } from '@/components/LocaleProvider';
 import UniversityCard from '@/components/UniversityCard';
+
+const ITEMS_PER_PAGE = 9;
 
 const HomePage = () => {
   const { userEntScore, setEntScore } = useCompareStore();
@@ -17,6 +28,7 @@ const HomePage = () => {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [hasDormitory, setHasDormitory] = useState<boolean | null>(null);
   const [hasMilitaryDept, setHasMilitaryDept] = useState<boolean | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Получаем уникальные города
   const cities = useMemo(() => {
@@ -54,6 +66,28 @@ const HomePage = () => {
       return true;
     });
   }, [searchQuery, selectedCity, hasDormitory, hasMilitaryDept]);
+
+  // Сброс страницы при изменении фильтров
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCity, hasDormitory, hasMilitaryDept]);
+
+  // Вычисление пагинации
+  const totalPages = Math.ceil(filteredUniversities.length / ITEMS_PER_PAGE);
+  const paginatedUniversities = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredUniversities.slice(startIndex, endIndex);
+  }, [filteredUniversities, currentPage]);
+
+  // Функция для переключения страницы с прокруткой вверх
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -208,13 +242,112 @@ const HomePage = () => {
       {/* Результаты */}
       <div className="flex flex-col gap-4">
         {filteredUniversities.length > 0 ? (
-          filteredUniversities.map((university) => (
-            <UniversityCard
-              key={university.id}
-              university={university}
-              userEntScore={userEntScore}
-            />
-          ))
+          <>
+            {paginatedUniversities.map((university) => (
+              <UniversityCard
+                key={university.id}
+                university={university}
+                userEntScore={userEntScore}
+              />
+            ))}
+            
+            {/* Пагинация */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    {/* Кнопка Previous */}
+                    {currentPage > 1 && (
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handlePageChange(currentPage - 1);
+                          }}
+                        />
+                      </PaginationItem>
+                    )}
+
+                    {/* Номера страниц */}
+                    {(() => {
+                      const pages: (number | 'ellipsis')[] = [];
+                      
+                      if (totalPages <= 7) {
+                        // Если страниц мало, показываем все
+                        for (let i = 1; i <= totalPages; i++) {
+                          pages.push(i);
+                        }
+                      } else {
+                        // Всегда показываем первую страницу
+                        pages.push(1);
+                        
+                        if (currentPage <= 3) {
+                          // Если мы в начале
+                          for (let i = 2; i <= 4; i++) {
+                            pages.push(i);
+                          }
+                          pages.push('ellipsis');
+                          pages.push(totalPages);
+                        } else if (currentPage >= totalPages - 2) {
+                          // Если мы в конце
+                          pages.push('ellipsis');
+                          for (let i = totalPages - 3; i <= totalPages; i++) {
+                            pages.push(i);
+                          }
+                        } else {
+                          // Если мы в середине
+                          pages.push('ellipsis');
+                          for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                            pages.push(i);
+                          }
+                          pages.push('ellipsis');
+                          pages.push(totalPages);
+                        }
+                      }
+                      
+                      return pages.map((page, index) => {
+                        if (page === 'ellipsis') {
+                          return (
+                            <PaginationItem key={`ellipsis-${index}`}>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          );
+                        }
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handlePageChange(page);
+                              }}
+                              isActive={currentPage === page}
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      });
+                    })()}
+
+                    {/* Кнопка Next */}
+                    {currentPage < totalPages && (
+                      <PaginationItem>
+                        <PaginationNext
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handlePageChange(currentPage + 1);
+                          }}
+                        />
+                      </PaginationItem>
+                    )}
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </>
         ) : (
           <Card>
             <CardContent className="py-12 text-center">
