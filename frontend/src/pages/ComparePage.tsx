@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Trash2, Check, X, ArrowLeft } from 'lucide-react';
 import { useCompareStore } from '../store/useCompareStore';
 import { useLocale } from '@/components/LocaleProvider';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
