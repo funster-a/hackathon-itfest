@@ -1,10 +1,17 @@
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, Star, Check, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Star, Check, X, Play } from 'lucide-react';
 import { universities } from '../data/mockData';
 import { useCompareStore } from '../store/useCompareStore';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 const UniversityDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -119,7 +126,7 @@ const UniversityDetailsPage = () => {
         </TabsContent>
       </Tabs>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-col sm:flex-row gap-4">
         <Button
           onClick={() => addToCompare(university)}
           disabled={isInCompare}
@@ -128,6 +135,30 @@ const UniversityDetailsPage = () => {
         >
           {isInCompare ? 'Уже в сравнении' : 'Добавить к сравнению'}
         </Button>
+        {university.hasTour && university.tourUrl && (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="default" className="w-full sm:w-auto">
+                <Play className="w-4 h-4 mr-2" />
+                Виртуальный тур
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-6xl w-full">
+              <DialogHeader>
+                <DialogTitle>Виртуальный тур: {university.name}</DialogTitle>
+              </DialogHeader>
+              <div className="w-full aspect-video rounded-lg overflow-hidden">
+                <iframe
+                  src={university.tourUrl}
+                  className="w-full h-full border-0"
+                  allow="fullscreen"
+                  allowFullScreen
+                  title={`Виртуальный тур ${university.name}`}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </div>
   );

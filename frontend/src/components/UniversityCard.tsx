@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Star } from 'lucide-react';
+import { MapPin, Star, Box } from 'lucide-react';
 import type { IUniversity } from '../types';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,15 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
           loading="lazy"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+        {university.hasTour && (
+          <Badge
+            variant="secondary"
+            className="absolute top-4 right-4 bg-white/90 text-black hover:bg-white shadow-lg"
+          >
+            <Box className="w-3 h-3 mr-1.5" />
+            360° Tour
+          </Badge>
+        )}
       </div>
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
