@@ -87,6 +87,18 @@ async def update_university(db: db_dependency, university_request: UniversityReq
     university_model.logo_url = university_request.logo_url
     university_model.tour_url = university_request.tour_url
     university_model.city = university_request.city
+    university_model.history = university_request.history
+    university_model.min_ent_score = university_request.min_ent_score
+    university_model.has_dormitory = university_request.has_dormitory
+    university_model.rating = university_request.rating
+    university_model.has_tour = university_request.has_tour
+    university_model.languages = university_request.languages
+    university_model.number_of_grants = university_request.number_of_grants
+    university_model.exchange_program = university_request.exchange_program
+    university_model.double_degree_program = university_request.double_degree_program
+    university_model.IELTS_sertificate = university_request.IELTS_sertificate
+    university_model.format = university_request.format
+    university_model.price = university_request.price
 
     db.add(university_model)
     db.commit()
@@ -101,6 +113,11 @@ async def update_program(db: db_dependency, program_request: ProgramRequest, pro
     program_model.degree = program_request.degree
     program_model.price = program_request.price
     program_model.duration = program_request.duration
+    program_model.language = program_request.language
+    program_model.min_ent_score = program_request.min_ent_score
+    program_model.internship = program_request.internship
+    program_model.double_degree_program = program_request.double_degree_program
+    program_model.employment = program_request.employment
 
     db.add(program_model)
     db.commit()
