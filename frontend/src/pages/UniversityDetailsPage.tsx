@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, Star, Check, X, Play } from 'lucide-react';
+import { ArrowLeft, MapPin, Star, Check, X, Play, ExternalLink } from 'lucide-react';
 import { universities } from '../data/mockData';
 import { useCompareStore } from '../store/useCompareStore';
 import { useLocale } from '@/components/LocaleProvider';
@@ -147,9 +147,20 @@ const UniversityDetailsPage = () => {
             </DialogTrigger>
             <DialogContent className="max-w-6xl w-full">
               <DialogHeader>
-                <DialogTitle>{t('details.virtualTourTitle')} {university.name}</DialogTitle>
+                <div className="flex items-center justify-between">
+                  <DialogTitle>{t('details.virtualTourTitle')} {university.name}</DialogTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open(university.tourUrl, '_blank')}
+                    className="h-8"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    {t('details.openInNewWindow')}
+                  </Button>
+                </div>
               </DialogHeader>
-              <div className="w-full aspect-video rounded-lg overflow-hidden">
+              <div className="w-full h-[60vh] md:h-[80vh] rounded-md border overflow-hidden">
                 <iframe
                   src={university.tourUrl}
                   className="w-full h-full border-0"

@@ -69,6 +69,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'details.alreadyInCompare': 'Уже в сравнении',
     'details.virtualTour': 'Виртуальный тур',
     'details.virtualTourTitle': 'Виртуальный тур:',
+    'details.openInNewWindow': 'Открыть в полном окне',
     
     // ComparePage
     'compare.title': 'Сравнение университетов',
@@ -137,6 +138,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'details.alreadyInCompare': 'Қазірдің өзінде салыстыруда',
     'details.virtualTour': 'Виртуалды тур',
     'details.virtualTourTitle': 'Виртуалды тур:',
+    'details.openInNewWindow': 'Толық терезеде ашу',
     
     // ComparePage
     'compare.title': 'Университеттерді салыстыру',
@@ -205,6 +207,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'details.alreadyInCompare': 'Already in Compare',
     'details.virtualTour': 'Virtual Tour',
     'details.virtualTourTitle': 'Virtual Tour:',
+    'details.openInNewWindow': 'Open in full window',
     
     // ComparePage
     'compare.title': 'Compare Universities',
