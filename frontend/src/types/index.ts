@@ -11,5 +11,8 @@ export interface IUniversity {
   hasTour?: boolean;
   tourUrl?: string;
   imageUrl?: string;
+  isPrivate?: boolean;
+  languages?: string[];
+  grantsPerYear?: number;
 }
 

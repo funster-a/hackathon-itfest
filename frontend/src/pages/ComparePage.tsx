@@ -41,9 +41,11 @@ const ComparePage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">{t('compare.parameter')}</TableHead>
+                <TableHead className="w-[200px] pl-6 pr-8">{t('compare.parameter')}</TableHead>
+                {/* Пустая колонка-спейсер для центрирования */}
+                <TableHead className="w-auto"></TableHead>
                 {compareList.map((university) => (
-                  <TableHead key={university.id}>
+                  <TableHead key={university.id} className="min-w-[200px] pl-6">
                     <div className="flex items-center justify-between">
                       <Link
                         to={`/university/${university.id}`}
@@ -63,39 +65,50 @@ const ComparePage = () => {
                     </div>
                   </TableHead>
                 ))}
+                {/* Пустая колонка-спейсер для центрирования */}
+                <TableHead className="w-auto"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow>
-                <TableCell className="font-medium">{t('compare.city')}</TableCell>
+                <TableCell className="font-medium pl-6 pr-8">{t('compare.city')}</TableCell>
+                <TableCell></TableCell>
                 {compareList.map((university) => (
-                  <TableCell key={university.id}>{university.city}</TableCell>
+                  <TableCell key={university.id} className="pl-6">{university.city}</TableCell>
                 ))}
+                <TableCell></TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">{t('compare.cost')}</TableCell>
+                <TableCell className="font-medium pl-6 pr-8">{t('compare.cost')}</TableCell>
+                <TableCell></TableCell>
                 {compareList.map((university) => (
-                  <TableCell key={university.id}>
+                  <TableCell key={university.id} className="pl-6">
                     {university.price.toLocaleString()} ₸
                   </TableCell>
                 ))}
+                <TableCell></TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">{t('compare.rating')}</TableCell>
+                <TableCell className="font-medium pl-6 pr-8">{t('compare.rating')}</TableCell>
+                <TableCell></TableCell>
                 {compareList.map((university) => (
-                  <TableCell key={university.id}>{university.rating}/5</TableCell>
+                  <TableCell key={university.id} className="pl-6">{university.rating}/5</TableCell>
                 ))}
+                <TableCell></TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">{t('compare.minScore')}</TableCell>
+                <TableCell className="font-medium pl-6 pr-8">{t('compare.minScore')}</TableCell>
+                <TableCell></TableCell>
                 {compareList.map((university) => (
-                  <TableCell key={university.id}>{university.minEntScore}</TableCell>
+                  <TableCell key={university.id} className="pl-6">{university.minEntScore}</TableCell>
                 ))}
+                <TableCell></TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">{t('compare.dormitory')}</TableCell>
+                <TableCell className="font-medium pl-6 pr-8">{t('compare.dormitory')}</TableCell>
+                <TableCell></TableCell>
                 {compareList.map((university) => (
-                  <TableCell key={university.id}>
+                  <TableCell key={university.id} className="pl-6">
                     {university.hasDormitory ? (
                       <Check className="w-5 h-5 text-green-600" />
                     ) : (
@@ -103,11 +116,13 @@ const ComparePage = () => {
                     )}
                   </TableCell>
                 ))}
+                <TableCell></TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">{t('compare.militaryDept')}</TableCell>
+                <TableCell className="font-medium pl-6 pr-8">{t('compare.militaryDept')}</TableCell>
+                <TableCell></TableCell>
                 {compareList.map((university) => (
-                  <TableCell key={university.id}>
+                  <TableCell key={university.id} className="pl-6">
                     {university.hasMilitaryDept ? (
                       <Check className="w-5 h-5 text-green-600" />
                     ) : (
@@ -115,6 +130,39 @@ const ComparePage = () => {
                     )}
                   </TableCell>
                 ))}
+                <TableCell></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium pl-6 pr-8">{t('compare.type')}</TableCell>
+                <TableCell></TableCell>
+                {compareList.map((university) => (
+                  <TableCell key={university.id} className="pl-6">
+                    {university.isPrivate ? t('compare.private') : t('compare.public')}
+                  </TableCell>
+                ))}
+                <TableCell></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium pl-6 pr-8">{t('compare.languages')}</TableCell>
+                <TableCell></TableCell>
+                {compareList.map((university) => (
+                  <TableCell key={university.id} className="pl-6">
+                    {university.languages && university.languages.length > 0
+                      ? university.languages.join(', ')
+                      : '-'}
+                  </TableCell>
+                ))}
+                <TableCell></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium pl-6 pr-8">{t('compare.grantsPerYear')}</TableCell>
+                <TableCell></TableCell>
+                {compareList.map((university) => (
+                  <TableCell key={university.id} className="pl-6">
+                    {university.grantsPerYear ? university.grantsPerYear.toLocaleString() : '-'}
+                  </TableCell>
+                ))}
+                <TableCell></TableCell>
               </TableRow>
             </TableBody>
           </Table>
