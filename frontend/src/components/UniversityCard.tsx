@@ -19,8 +19,8 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
   const showIndicator = userEntScore !== null;
   const isInCompare = compareList.some((u) => u.id === university.id);
 
-  // Генерируем разные placeholder изображения для каждого университета
-  const imageUrl = `https://picsum.photos/seed/${university.id}/800/400`;
+  // Используем реальное изображение, если есть, иначе placeholder
+  const imageUrl = university.imageUrl || `https://picsum.photos/seed/${university.id}/800/400`;
 
   return (
     <Card className="hover:shadow-md transition-shadow overflow-hidden">

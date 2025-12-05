@@ -10,5 +10,6 @@ export interface IUniversity {
   rating: number;
   hasTour?: boolean;
   tourUrl?: string;
+  imageUrl?: string;
 }
 
