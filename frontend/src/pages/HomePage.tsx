@@ -446,31 +446,87 @@ const HomePage = () => {
   }, []);
 
   const findUniversityByName = useCallback((name: string) => {
-    // Нечеткий поиск по названию
+    if (!name || !universities.length) return null;
+    
+    // Нормализуем название для поиска
     const normalizedName = name.toLowerCase().trim();
-    return universities.find((u) => 
-      u.name.toLowerCase().includes(normalizedName) || 
-      normalizedName.includes(u.name.toLowerCase())
+    
+    // 1. Точное совпадение (без учета регистра)
+    let match = universities.find((u) => 
+      u.name.toLowerCase().trim() === normalizedName
     );
+    if (match) return match;
+    
+    // 2. Одно название содержит другое
+    match = universities.find((u) => {
+      const uniName = u.name.toLowerCase().trim();
+      return uniName.includes(normalizedName) || normalizedName.includes(uniName);
+    });
+    if (match) return match;
+    
+    // 3. Поиск по первым словам (для случаев типа "КБТУ" vs "Казахстанско-Британский технический университет")
+    const nameWords = normalizedName.split(/\s+/).filter(w => w.length > 2);
+    if (nameWords.length > 0) {
+      match = universities.find((u) => {
+        const uniName = u.name.toLowerCase().trim();
+        return nameWords.some(word => uniName.includes(word));
+      });
+      if (match) return match;
+    }
+    
+    // 4. Поиск по первым буквам (для аббревиатур)
+    const firstLetters = normalizedName.split(/\s+/).map(w => w[0]).join('').toUpperCase();
+    if (firstLetters.length >= 2) {
+      match = universities.find((u) => {
+        const uniFirstLetters = u.name.split(/\s+/).map(w => w[0]).join('').toUpperCase();
+        return uniFirstLetters === firstLetters || uniFirstLetters.includes(firstLetters) || firstLetters.includes(uniFirstLetters);
+      });
+      if (match) return match;
+    }
+    
+    return null;
   }, [universities]);
 
   const handleGoToUniversity = useCallback(() => {
-    if (advisorRecommendation) {
-      const university = findUniversityByName(advisorRecommendation.university_name);
-      if (university) {
-        navigate(`/university/${university.id}`);
+    if (!advisorRecommendation || !advisorRecommendation.university_name) {
+      console.error('Нет рекомендации или названия университета');
+      return;
+    }
+    
+    if (universities.length === 0) {
+      console.error('Список университетов пуст');
+      return;
+    }
+    
+    const university = findUniversityByName(advisorRecommendation.university_name);
+    
+    if (university) {
+      console.log('Найден университет:', university.name, 'ID:', university.id);
+      navigate(`/university/${university.id}`);
+    } else {
+      console.error('Университет не найден:', advisorRecommendation.university_name);
+      console.log('Доступные университеты:', universities.map(u => u.name));
+      
+      // Пытаемся найти хотя бы первый университет с похожим названием
+      const searchName = advisorRecommendation.university_name.toLowerCase();
+      const fallback = universities.find((u) => {
+        const uniName = u.name.toLowerCase();
+        // Ищем по первым словам
+        const searchWords = searchName.split(/\s+/).filter(w => w.length > 2);
+        const uniWords = uniName.split(/\s+/).filter(w => w.length > 2);
+        return searchWords.some(sw => uniWords.some(uw => uw.includes(sw) || sw.includes(uw)));
+      });
+      
+      if (fallback) {
+        console.log('Найден похожий университет:', fallback.name);
+        navigate(`/university/${fallback.id}`);
       } else {
-        // Если не нашли, попробуем найти по частичному совпадению
-        const partialMatch = universities.find((u) => 
-          advisorRecommendation.university_name.toLowerCase().includes(u.name.toLowerCase().substring(0, 10)) ||
-          u.name.toLowerCase().includes(advisorRecommendation.university_name.toLowerCase().substring(0, 10))
-        );
-        if (partialMatch) {
-          navigate(`/university/${partialMatch.id}`);
-        }
+        // Если ничего не нашли, переходим на главную с поиском
+        setSearchQuery(advisorRecommendation.university_name);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
-  }, [advisorRecommendation, findUniversityByName, navigate]);
+  }, [advisorRecommendation, findUniversityByName, navigate, universities, setSearchQuery]);
 
   const toggleFiltersVisible = useCallback(() => {
     setFiltersVisible(prev => !prev);
