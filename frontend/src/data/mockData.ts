@@ -227,7 +227,7 @@ const baseUniversities: IUniversity[] = [
     id: '4',
     name: 'Nazarbayev University',
     description: 'Флагманский университет Казахстана, созданный по модели ведущих мировых университетов. Предлагает программы бакалавриата и магистратуры на английском языке с международными стандартами образования.',
-    city: 'Нур-Султан',
+    city: 'Астана',
     price: 6000000,
     minEntScore: 130,
     hasDormitory: true,

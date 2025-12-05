@@ -23,7 +23,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from '@/components/ui/pagination';
-import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, Grid3x3, List } from 'lucide-react';
 import { useCompareStore } from '../store/useCompareStore';
 import { useLocale } from '@/components/LocaleProvider';
 import UniversityCard from '@/components/UniversityCard';
@@ -158,6 +158,7 @@ const HomePage = () => {
   const [advisorRecommendation, setAdvisorRecommendation] = useState<IAdvisorResponse | null>(null);
   const [universities, setUniversities] = useState<IUniversity[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Загрузка университетов с API
   useEffect(() => {
@@ -286,17 +287,30 @@ const HomePage = () => {
     setCurrentPage(1);
   }, [searchQuery, selectedCity, hasDormitory, selectedProfiles.length, selectedProfessions.length, selectedDegrees.length, selectedLanguagesSet.size, priceRange]);
 
-  // Вычисление пагинации
+  // Дублируем университеты для демонстрации пагинации (2-3 раза)
+  const duplicatedUniversities = useMemo(() => {
+    const duplicated = [...filteredUniversities];
+    // Добавляем копии с уникальными ID
+    for (let i = 0; i < 2; i++) {
+      duplicated.push(...filteredUniversities.map(uni => ({
+        ...uni,
+        id: `${uni.id}-copy-${i + 1}`
+      })));
+    }
+    return duplicated;
+  }, [filteredUniversities]);
+
+  // Вычисление пагинации на основе дублированных университетов
   const totalPages = useMemo(() => 
-    Math.ceil(filteredUniversities.length / ITEMS_PER_PAGE),
-    [filteredUniversities.length]
+    Math.ceil(duplicatedUniversities.length / ITEMS_PER_PAGE),
+    [duplicatedUniversities.length]
   );
-  
+
   const paginatedUniversities = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredUniversities.slice(startIndex, endIndex);
-  }, [filteredUniversities, currentPage]);
+    return duplicatedUniversities.slice(startIndex, endIndex);
+  }, [duplicatedUniversities, currentPage]);
 
   // Мемоизируем вычисление страниц для пагинации
   const paginationPages = useMemo(() => {
@@ -821,13 +835,45 @@ const HomePage = () => {
           </Card>
         ) : filteredUniversities.length > 0 ? (
           <>
-            {paginatedUniversities.map((university) => (
-              <UniversityCard
-                key={university.id}
-                university={university}
-                userEntScore={userEntScore}
-              />
-            ))}
+            {/* Переключатель вида отображения */}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-muted-foreground">
+                {t('filters.found')} {duplicatedUniversities.length} {t('filters.universities')}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-9"
+                  aria-label={t('filters.gridView')}
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="h-9"
+                  aria-label={t('filters.listView')}
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className={viewMode === 'grid' 
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
+              : 'flex flex-col gap-4'
+            }>
+              {paginatedUniversities.map((university) => (
+                <UniversityCard
+                  key={university.id}
+                  university={university}
+                  userEntScore={userEntScore}
+                />
+              ))}
+            </div>
             
             {/* Пагинация */}
             {totalPages > 1 && (
