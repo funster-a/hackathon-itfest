@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -178,19 +178,42 @@ const HomePage = () => {
     return Array.from(languageSet).sort();
   }, []);
 
-  const handleEntScoreChange = (value: string) => {
+  // Вычисляем диапазон цен один раз
+  const priceRangeData = useMemo(() => getPriceRange(universities), []);
+
+  // Кешируем нормализованный поисковый запрос
+  const normalizedSearchQuery = useMemo(() => 
+    searchQuery.toLowerCase().trim(), 
+    [searchQuery]
+  );
+
+  // Создаем Set для быстрой проверки языков
+  const selectedLanguagesSet = useMemo(() => 
+    new Set(selectedLanguages), 
+    [selectedLanguages]
+  );
+
+  const handleEntScoreChange = useCallback((value: string) => {
     setEntScoreInput(value);
     const numValue = value === '' ? null : Number(value);
     if (numValue === null || (!isNaN(numValue) && numValue >= 0 && numValue <= 140)) {
       setEntScore(numValue);
     }
-  };
+  }, [setEntScore]);
 
-  // Фильтрация университетов
+  // Фильтрация университетов (оптимизированная версия)
   const filteredUniversities = useMemo(() => {
+    if (!normalizedSearchQuery && !selectedCity && !hasDormitory && 
+        selectedLanguages.length === 0 && 
+        priceRange[0] === priceRangeData.min && 
+        priceRange[1] === priceRangeData.max) {
+      // Если нет активных фильтров, возвращаем все университеты
+      return universities;
+    }
+
     return universities.filter((university) => {
-      // Поиск по названию
-      if (searchQuery && !university.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+      // Поиск по названию (используем кешированное значение)
+      if (normalizedSearchQuery && !university.name.toLowerCase().includes(normalizedSearchQuery)) {
         return false;
       }
       // Фильтр по городу
@@ -205,15 +228,15 @@ const HomePage = () => {
       if (university.price < priceRange[0] || university.price > priceRange[1]) {
         return false;
       }
-      // Фильтр по языкам
-      if (selectedLanguages.length > 0) {
-        if (!university.languages || !university.languages.some(lang => selectedLanguages.includes(lang))) {
+      // Фильтр по языкам (используем Set для быстрой проверки)
+      if (selectedLanguagesSet.size > 0) {
+        if (!university.languages || !university.languages.some(lang => selectedLanguagesSet.has(lang))) {
           return false;
         }
       }
       return true;
     });
-  }, [searchQuery, selectedCity, hasDormitory, priceRange, selectedLanguages]);
+  }, [normalizedSearchQuery, selectedCity, hasDormitory, priceRange, selectedLanguagesSet, priceRangeData]);
 
   // Сброс страницы при изменении фильтров
   useEffect(() => {
@@ -221,25 +244,67 @@ const HomePage = () => {
   }, [searchQuery, selectedCity, hasDormitory, selectedProfiles, selectedProfessions, selectedDegrees, selectedLanguages, priceRange]);
 
   // Вычисление пагинации
-  const totalPages = Math.ceil(filteredUniversities.length / ITEMS_PER_PAGE);
+  const totalPages = useMemo(() => 
+    Math.ceil(filteredUniversities.length / ITEMS_PER_PAGE),
+    [filteredUniversities.length]
+  );
+  
   const paginatedUniversities = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     return filteredUniversities.slice(startIndex, endIndex);
   }, [filteredUniversities, currentPage]);
 
+  // Мемоизируем вычисление страниц для пагинации
+  const paginationPages = useMemo(() => {
+    const pages: (number | 'ellipsis')[] = [];
+    
+    if (totalPages <= 7) {
+      // Если страниц мало, показываем все
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Всегда показываем первую страницу
+      pages.push(1);
+      
+      if (currentPage <= 3) {
+        // Если мы в начале
+        for (let i = 2; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        // Если мы в конце
+        pages.push('ellipsis');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // Если мы в середине
+        pages.push('ellipsis');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  }, [totalPages, currentPage]);
+
   // Функция для переключения страницы с прокруткой вверх
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
     });
-  };
+  }, []);
 
-  const priceRangeData = useMemo(() => getPriceRange(universities), []);
-
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchQuery('');
     setSelectedCity(null);
     setHasDormitory(false);
@@ -248,9 +313,9 @@ const HomePage = () => {
     setSelectedDegrees([]);
     setSelectedLanguages([]);
     setPriceRange([priceRangeData.min, priceRangeData.max]);
-  };
+  }, [priceRangeData]);
 
-  const hasActiveFilters = 
+  const hasActiveFilters = useMemo(() => 
     selectedCity !== null || 
     hasDormitory || 
     selectedProfiles.length > 0 || 
@@ -258,9 +323,11 @@ const HomePage = () => {
     selectedDegrees.length > 0 ||
     selectedLanguages.length > 0 ||
     priceRange[0] !== priceRangeData.min ||
-    priceRange[1] !== priceRangeData.max;
+    priceRange[1] !== priceRangeData.max,
+    [selectedCity, hasDormitory, selectedProfiles.length, selectedProfessions.length, selectedDegrees.length, selectedLanguages.length, priceRange, priceRangeData]
+  );
 
-  const toggleProfile = (profile: string) => {
+  const toggleProfile = useCallback((profile: string) => {
     setSelectedProfiles((prev) => {
       const newProfiles = prev.includes(profile)
         ? prev.filter((p) => p !== profile)
@@ -276,15 +343,15 @@ const HomePage = () => {
       
       return newProfiles;
     });
-  };
+  }, []);
 
-  const toggleProfession = (profession: string) => {
+  const toggleProfession = useCallback((profession: string) => {
     setSelectedProfessions((prev) =>
       prev.includes(profession)
         ? prev.filter((p) => p !== profession)
         : [...prev, profession]
     );
-  };
+  }, []);
 
   // Получаем доступные профессии для выбранных профилей
   const availableProfessions = useMemo(() => {
@@ -295,23 +362,23 @@ const HomePage = () => {
     return Array.from(professions).sort();
   }, [selectedProfiles]);
 
-  const toggleDegree = (degree: string) => {
+  const toggleDegree = useCallback((degree: string) => {
     setSelectedDegrees((prev) =>
       prev.includes(degree)
         ? prev.filter((d) => d !== degree)
         : [...prev, degree]
     );
-  };
+  }, []);
 
-  const toggleLanguage = (language: string) => {
+  const toggleLanguage = useCallback((language: string) => {
     setSelectedLanguages((prev) =>
       prev.includes(language)
         ? prev.filter((l) => l !== language)
         : [...prev, language]
     );
-  };
+  }, []);
 
-  const handleAdvisorRecommend = async (data: IAdvisorRequest) => {
+  const handleAdvisorRecommend = useCallback(async (data: IAdvisorRequest) => {
     try {
       const response = await getAiRecommendation(data);
       setAdvisorRecommendation(response);
@@ -319,18 +386,18 @@ const HomePage = () => {
     } catch (error) {
       console.error('Ошибка при получении рекомендации:', error);
     }
-  };
+  }, []);
 
-  const findUniversityByName = (name: string) => {
+  const findUniversityByName = useCallback((name: string) => {
     // Нечеткий поиск по названию
     const normalizedName = name.toLowerCase().trim();
     return universities.find((u) => 
       u.name.toLowerCase().includes(normalizedName) || 
       normalizedName.includes(u.name.toLowerCase())
     );
-  };
+  }, []);
 
-  const handleGoToUniversity = () => {
+  const handleGoToUniversity = useCallback(() => {
     if (advisorRecommendation) {
       const university = findUniversityByName(advisorRecommendation.university_name);
       if (university) {
@@ -346,7 +413,21 @@ const HomePage = () => {
         }
       }
     }
-  };
+  }, [advisorRecommendation, findUniversityByName, navigate]);
+
+  const toggleFiltersVisible = useCallback(() => {
+    setFiltersVisible(prev => !prev);
+  }, []);
+
+  const handleCityChange = useCallback((city: string) => {
+    setSelectedCity(prevCity => prevCity === city ? null : city);
+  }, []);
+
+  const handlePriceRangeChange = useCallback((value: number[]) => {
+    if (Array.isArray(value) && value.length === 2) {
+      setPriceRange([value[0], value[1]]);
+    }
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -377,7 +458,7 @@ const HomePage = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setFiltersVisible(!filtersVisible)}
+                  onClick={toggleFiltersVisible}
                   className="h-8"
                   aria-label={filtersVisible ? t('filters.hide') : t('filters.show')}
                 >
@@ -419,7 +500,7 @@ const HomePage = () => {
                     key={city}
                     variant={selectedCity === city ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setSelectedCity(selectedCity === city ? null : city)}
+                    onClick={() => handleCityChange(city)}
                     className="text-sm"
                   >
                     {city}
@@ -519,13 +600,9 @@ const HomePage = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('filters.priceRange')}</label>
               <div className="px-2">
-                <Slider
+                  <Slider
                   value={priceRange}
-                  onValueChange={(value) => {
-                    if (Array.isArray(value) && value.length === 2) {
-                      setPriceRange([value[0], value[1]]);
-                    }
-                  }}
+                  onValueChange={handlePriceRangeChange}
                   min={priceRangeData.min}
                   max={priceRangeData.max}
                   step={100000}
@@ -722,66 +799,29 @@ const HomePage = () => {
                     )}
 
                     {/* Номера страниц */}
-                    {(() => {
-                      const pages: (number | 'ellipsis')[] = [];
-                      
-                      if (totalPages <= 7) {
-                        // Если страниц мало, показываем все
-                        for (let i = 1; i <= totalPages; i++) {
-                          pages.push(i);
-                        }
-                      } else {
-                        // Всегда показываем первую страницу
-                        pages.push(1);
-                        
-                        if (currentPage <= 3) {
-                          // Если мы в начале
-                          for (let i = 2; i <= 4; i++) {
-                            pages.push(i);
-                          }
-                          pages.push('ellipsis');
-                          pages.push(totalPages);
-                        } else if (currentPage >= totalPages - 2) {
-                          // Если мы в конце
-                          pages.push('ellipsis');
-                          for (let i = totalPages - 3; i <= totalPages; i++) {
-                            pages.push(i);
-                          }
-                        } else {
-                          // Если мы в середине
-                          pages.push('ellipsis');
-                          for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                            pages.push(i);
-                          }
-                          pages.push('ellipsis');
-                          pages.push(totalPages);
-                        }
-                      }
-                      
-                      return pages.map((page, index) => {
-                        if (page === 'ellipsis') {
-                          return (
-                            <PaginationItem key={`ellipsis-${index}`}>
-                              <PaginationEllipsis />
-                            </PaginationItem>
-                          );
-                        }
+                    {paginationPages.map((page, index) => {
+                      if (page === 'ellipsis') {
                         return (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handlePageChange(page);
-                              }}
-                              isActive={currentPage === page}
-                            >
-                              {page}
-                            </PaginationLink>
+                          <PaginationItem key={`ellipsis-${index}`}>
+                            <PaginationEllipsis />
                           </PaginationItem>
                         );
-                      });
-                    })()}
+                      }
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(page);
+                            }}
+                            isActive={currentPage === page}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
 
                     {/* Кнопка Next */}
                     {currentPage < totalPages && (
