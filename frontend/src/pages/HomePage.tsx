@@ -181,20 +181,33 @@ const HomePage = () => {
 
   // Получаем уникальные города
   const cities = useMemo(() => {
-    const citySet = new Set(universities.map((u) => u.city));
-    return Array.from(citySet);
-  }, []);
+    const citySet = new Set(
+      universities
+        .map((u) => u.city)
+        .filter((city) => city && city !== 'string' && city.trim() !== '')
+    );
+    return Array.from(citySet).sort();
+  }, [universities]);
 
-  // Получаем уникальные языки
+  // Получаем уникальные языки (нормализуем регистр)
   const languages = useMemo(() => {
-    const languageSet = new Set<string>();
+    const languageMap = new Map<string, string>(); // храним нормализованную версию как ключ
     universities.forEach((u) => {
       if (u.languages) {
-        u.languages.forEach((lang) => languageSet.add(lang));
+        u.languages.forEach((lang) => {
+          if (lang && lang.trim()) {
+            // Нормализуем: первая буква заглавная, остальные строчные
+            const normalized = lang.trim().charAt(0).toUpperCase() + lang.trim().slice(1).toLowerCase();
+            // Используем Map чтобы сохранить первую встреченную версию с правильным регистром
+            if (!languageMap.has(normalized)) {
+              languageMap.set(normalized, normalized);
+            }
+          }
+        });
       }
     });
-    return Array.from(languageSet).sort();
-  }, []);
+    return Array.from(languageMap.values()).sort();
+  }, [universities]);
 
   // Вычисляем диапазон цен один раз
   const priceRangeData = useMemo(() => getPriceRange(universities), []);

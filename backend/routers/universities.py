@@ -47,7 +47,20 @@ async def read_universities(db: db_dependency):
         
         # Получаем admission info
         admission = db.query(AdmissionInfo).filter(AdmissionInfo.university_id == uni.id).first()
-        admission_response = AdmissionInfoResponse.model_validate(admission) if admission else None
+        admission_response = None
+        if admission:
+            # Парсим JSON поля перед валидацией
+            admission_dict = {
+                'id': admission.id,
+                'university_id': admission.university_id,
+                'deadline_date': admission.deadline_date,
+                'requirements_text': admission.requirements_text,
+                'requirements': parse_json_field(admission.requirements) if admission.requirements else None,
+                'deadlines': parse_json_field(admission.deadlines) if admission.deadlines else None,
+                'scholarships': parse_json_field(admission.scholarships) if admission.scholarships else None,
+                'procedure': admission.procedure,
+            }
+            admission_response = AdmissionInfoResponse.model_validate(admission_dict)
         
         # Создаем ответ с правильной обработкой JSON полей
         uni_dict = {
@@ -55,24 +68,6 @@ async def read_universities(db: db_dependency):
             'programs': program_responses if program_responses else None,
             'admission_info': admission_response
         }
-        # Парсим JSON поля для admission_info если они есть
-        if admission_response:
-            if hasattr(admission, 'requirements') and admission.requirements:
-                try:
-                    admission_response.requirements = json.loads(admission.requirements) if isinstance(admission.requirements, str) else admission.requirements
-                except:
-                    admission_response.requirements = None
-            if hasattr(admission, 'deadlines') and admission.deadlines:
-                try:
-                    admission_response.deadlines = json.loads(admission.deadlines) if isinstance(admission.deadlines, str) else admission.deadlines
-                except:
-                    admission_response.deadlines = None
-            if hasattr(admission, 'scholarships') and admission.scholarships:
-                try:
-                    admission_response.scholarships = json.loads(admission.scholarships) if isinstance(admission.scholarships, str) else admission.scholarships
-                except:
-                    admission_response.scholarships = None
-        
         result.append(UniversityResponse.model_validate(uni_dict))
     return result
 
@@ -88,7 +83,20 @@ async def read_university(db: db_dependency, university_id: int = Path(gt=0)):
     
     # Получаем admission info
     admission = db.query(AdmissionInfo).filter(AdmissionInfo.university_id == university_id).first()
-    admission_response = AdmissionInfoResponse.model_validate(admission) if admission else None
+    admission_response = None
+    if admission:
+        # Парсим JSON поля перед валидацией
+        admission_dict = {
+            'id': admission.id,
+            'university_id': admission.university_id,
+            'deadline_date': admission.deadline_date,
+            'requirements_text': admission.requirements_text,
+            'requirements': parse_json_field(admission.requirements) if admission.requirements else None,
+            'deadlines': parse_json_field(admission.deadlines) if admission.deadlines else None,
+            'scholarships': parse_json_field(admission.scholarships) if admission.scholarships else None,
+            'procedure': admission.procedure,
+        }
+        admission_response = AdmissionInfoResponse.model_validate(admission_dict)
     
     # Создаем ответ с правильной обработкой JSON полей
     uni_dict = {
@@ -96,24 +104,6 @@ async def read_university(db: db_dependency, university_id: int = Path(gt=0)):
         'programs': program_responses if program_responses else None,
         'admission_info': admission_response
     }
-    # Парсим JSON поля для admission_info если они есть
-    if admission_response:
-        if hasattr(admission, 'requirements') and admission.requirements:
-            try:
-                admission_response.requirements = json.loads(admission.requirements) if isinstance(admission.requirements, str) else admission.requirements
-            except:
-                admission_response.requirements = None
-        if hasattr(admission, 'deadlines') and admission.deadlines:
-            try:
-                admission_response.deadlines = json.loads(admission.deadlines) if isinstance(admission.deadlines, str) else admission.deadlines
-            except:
-                admission_response.deadlines = None
-        if hasattr(admission, 'scholarships') and admission.scholarships:
-            try:
-                admission_response.scholarships = json.loads(admission.scholarships) if isinstance(admission.scholarships, str) else admission.scholarships
-            except:
-                admission_response.scholarships = None
-    
     return UniversityResponse.model_validate(uni_dict)
 
 @router.get('/programs', status_code=status.HTTP_200_OK, tags=['Programs'], response_model=List[ProgramResponse])

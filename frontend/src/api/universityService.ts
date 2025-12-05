@@ -26,6 +26,12 @@ const adaptUniversity = (backendUni: IBackendUniversity, programs: IBackendProgr
     // Если не JSON, пробуем разделить по запятым
     languagesArray = backendUni.languages ? backendUni.languages.split(',').map(l => l.trim()).filter(Boolean) : [];
   }
+  
+  // Нормализуем регистр языков (первая буква заглавная, остальные строчные)
+  languagesArray = languagesArray.map(lang => {
+    if (!lang || !lang.trim()) return lang;
+    return lang.trim().charAt(0).toUpperCase() + lang.trim().slice(1).toLowerCase();
+  });
 
   // Преобразуем программы
   const academicPrograms: IAcademicProgram[] = uniPrograms
@@ -88,9 +94,15 @@ const adaptUniversity = (backendUni: IBackendUniversity, programs: IBackendProgr
     grantsPerYear: backendUni.number_of_grants,
     academicPrograms: academicPrograms.length > 0 ? academicPrograms : undefined,
     admissions: backendUni.admission_info ? {
-      requirements: backendUni.admission_info.requirements || [],
-      deadlines: backendUni.admission_info.deadlines || [],
-      scholarships: backendUni.admission_info.scholarships || [],
+      requirements: Array.isArray(backendUni.admission_info.requirements) 
+        ? backendUni.admission_info.requirements 
+        : (backendUni.admission_info.requirements ? [backendUni.admission_info.requirements] : []),
+      deadlines: Array.isArray(backendUni.admission_info.deadlines) 
+        ? backendUni.admission_info.deadlines 
+        : (backendUni.admission_info.deadlines ? [backendUni.admission_info.deadlines] : []),
+      scholarships: Array.isArray(backendUni.admission_info.scholarships) 
+        ? backendUni.admission_info.scholarships 
+        : (backendUni.admission_info.scholarships ? [backendUni.admission_info.scholarships] : []),
       procedure: backendUni.admission_info.procedure || '',
     } : undefined,
     international: international,
