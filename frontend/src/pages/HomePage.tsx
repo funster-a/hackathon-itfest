@@ -178,17 +178,21 @@ const HomePage = () => {
       if (selectedCity && university.city !== selectedCity) {
         return false;
       }
-      // Фильтр по общежитию
-      if (hasDormitory !== null && university.hasDormitory !== hasDormitory) {
+      // Фильтр по общежитию (применяется только если выбрано)
+      if (hasDormitory && !university.hasDormitory) {
         return false;
       }
-      // Фильтр по военной кафедре
-      if (hasMilitaryDept !== null && university.hasMilitaryDept !== hasMilitaryDept) {
+      // Фильтр по военной кафедре (применяется только если выбрано)
+      if (hasMilitaryDept && !university.hasMilitaryDept) {
+        return false;
+      }
+      // Фильтр по стоимости обучения
+      if (university.price < priceRange[0] || university.price > priceRange[1]) {
         return false;
       }
       return true;
     });
-  }, [searchQuery, selectedCity, hasDormitory, hasMilitaryDept]);
+  }, [searchQuery, selectedCity, hasDormitory, hasMilitaryDept, priceRange]);
 
   // Сброс страницы при изменении фильтров
   useEffect(() => {

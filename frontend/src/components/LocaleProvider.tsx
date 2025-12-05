@@ -94,6 +94,11 @@ const translations: Record<Locale, Record<string, string>> = {
     'compare.minScore': 'Проходной балл на грант',
     'compare.dormitory': 'Общежитие',
     'compare.militaryDept': 'Военная кафедра',
+    'compare.type': 'Тип университета',
+    'compare.private': 'Частный',
+    'compare.public': 'Государственный',
+    'compare.languages': 'Язык обучения',
+    'compare.grantsPerYear': 'Грантов в год',
   },
   kk: {
     // Header
@@ -174,6 +179,11 @@ const translations: Record<Locale, Record<string, string>> = {
     'compare.minScore': 'Грантқа өту баллы',
     'compare.dormitory': 'Жатақхана',
     'compare.militaryDept': 'Әскери кафедра',
+    'compare.type': 'Университет түрі',
+    'compare.private': 'Жеке',
+    'compare.public': 'Мемлекеттік',
+    'compare.languages': 'Оқыту тілі',
+    'compare.grantsPerYear': 'Жылына грант',
   },
   en: {
     // Header
@@ -254,6 +264,11 @@ const translations: Record<Locale, Record<string, string>> = {
     'compare.minScore': 'Min Score for Grant',
     'compare.dormitory': 'Dormitory',
     'compare.militaryDept': 'Military Department',
+    'compare.type': 'University Type',
+    'compare.private': 'Private',
+    'compare.public': 'Public',
+    'compare.languages': 'Language of Instruction',
+    'compare.grantsPerYear': 'Grants per Year',
   },
 };
 

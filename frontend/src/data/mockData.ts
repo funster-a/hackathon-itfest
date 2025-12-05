@@ -14,6 +14,9 @@ const baseUniversities: IUniversity[] = [
     hasTour: true,
     tourUrl: 'https://kaznpu.kz/VirtualTour/index_ru.html',
     imageUrl: 'https://www.kimep.kz/prospective-students/wp-content/blogs.dir/184/files/2018/04/default-1.jpg',
+    isPrivate: true,
+    languages: ['Английский', 'Русский'],
+    grantsPerYear: 150,
   },
   {
     id: '2',
@@ -28,6 +31,9 @@ const baseUniversities: IUniversity[] = [
     hasTour: true,
     tourUrl: 'https://turan.edu.kz/3d/',
     imageUrl: 'https://turan.edu.kz/wp-content/uploads/2023/02/ob-universitete-oblozhka-scaled.jpg',
+    isPrivate: true,
+    languages: ['Русский', 'Казахский', 'Английский'],
+    grantsPerYear: 200,
   },
   {
     id: '3',
@@ -42,6 +48,9 @@ const baseUniversities: IUniversity[] = [
     hasTour: true,
     tourUrl: 'https://elibrary.kaznu.kz/3dtour/index.html',
     imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/72/Al-Farabi_KazNU_rektorat.jpg',
+    isPrivate: false,
+    languages: ['Казахский', 'Русский'],
+    grantsPerYear: 5000,
   },
   {
     id: '4',
@@ -56,6 +65,9 @@ const baseUniversities: IUniversity[] = [
     hasTour: true,
     tourUrl: 'https://nu.edu.kz/ru/campus/campustour',
     imageUrl: 'https://www.gov.kz/uploads/2023/7/21/ed7fc6cd24f0b5de4a4cf506fbc56d30_original.250304.jpg',
+    isPrivate: false,
+    languages: ['Английский'],
+    grantsPerYear: 800,
   },
 ];
 
