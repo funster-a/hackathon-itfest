@@ -144,11 +144,13 @@ const HomePage = () => {
   const [selectedProfiles, setSelectedProfiles] = useState<string[]>([]);
   const [selectedProfessions, setSelectedProfessions] = useState<string[]>([]);
   const [selectedDegrees, setSelectedDegrees] = useState<string[]>([]);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [profilesOpen, setProfilesOpen] = useState<boolean>(false);
   const [professionsOpen, setProfessionsOpen] = useState<boolean>(false);
   const [degreesOpen, setDegreesOpen] = useState<boolean>(false);
+  const [languagesOpen, setLanguagesOpen] = useState<boolean>(false);
   const [filtersVisible, setFiltersVisible] = useState<boolean>(true);
   const [isAdvisorModalOpen, setIsAdvisorModalOpen] = useState<boolean>(false);
   const [advisorRecommendation, setAdvisorRecommendation] = useState<IAdvisorResponse | null>(null);
@@ -163,6 +165,17 @@ const HomePage = () => {
   const cities = useMemo(() => {
     const citySet = new Set(universities.map((u) => u.city));
     return Array.from(citySet);
+  }, []);
+
+  // Получаем уникальные языки
+  const languages = useMemo(() => {
+    const languageSet = new Set<string>();
+    universities.forEach((u) => {
+      if (u.languages) {
+        u.languages.forEach((lang) => languageSet.add(lang));
+      }
+    });
+    return Array.from(languageSet).sort();
   }, []);
 
   const handleEntScoreChange = (value: string) => {
@@ -192,14 +205,20 @@ const HomePage = () => {
       if (university.price < priceRange[0] || university.price > priceRange[1]) {
         return false;
       }
+      // Фильтр по языкам
+      if (selectedLanguages.length > 0) {
+        if (!university.languages || !university.languages.some(lang => selectedLanguages.includes(lang))) {
+          return false;
+        }
+      }
       return true;
     });
-  }, [searchQuery, selectedCity, hasDormitory, priceRange]);
+  }, [searchQuery, selectedCity, hasDormitory, priceRange, selectedLanguages]);
 
   // Сброс страницы при изменении фильтров
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCity, hasDormitory, selectedProfiles, selectedProfessions, selectedDegrees, priceRange]);
+  }, [searchQuery, selectedCity, hasDormitory, selectedProfiles, selectedProfessions, selectedDegrees, selectedLanguages, priceRange]);
 
   // Вычисление пагинации
   const totalPages = Math.ceil(filteredUniversities.length / ITEMS_PER_PAGE);
@@ -227,6 +246,7 @@ const HomePage = () => {
     setSelectedProfiles([]);
     setSelectedProfessions([]);
     setSelectedDegrees([]);
+    setSelectedLanguages([]);
     setPriceRange([priceRangeData.min, priceRangeData.max]);
   };
 
@@ -236,6 +256,7 @@ const HomePage = () => {
     selectedProfiles.length > 0 || 
     selectedProfessions.length > 0 ||
     selectedDegrees.length > 0 ||
+    selectedLanguages.length > 0 ||
     priceRange[0] !== priceRangeData.min ||
     priceRange[1] !== priceRangeData.max;
 
@@ -279,6 +300,14 @@ const HomePage = () => {
       prev.includes(degree)
         ? prev.filter((d) => d !== degree)
         : [...prev, degree]
+    );
+  };
+
+  const toggleLanguage = (language: string) => {
+    setSelectedLanguages((prev) =>
+      prev.includes(language)
+        ? prev.filter((l) => l !== language)
+        : [...prev, language]
     );
   };
 
@@ -511,40 +540,79 @@ const HomePage = () => {
 
             <Separator />
 
-            {/* Фильтр по научным степеням */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t('filters.degrees')}</label>
-              <DropdownMenu 
-                modal={false} 
-                open={degreesOpen} 
-                onOpenChange={setDegreesOpen}
-              >
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {selectedDegrees.length > 0
-                      ? `${selectedDegrees.length} ${t('filters.selected')}`
-                      : t('filters.selectDegrees')}
-                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  className="w-56"
-                  onCloseAutoFocus={(e) => e.preventDefault()}
+            {/* Фильтр по научным степеням и языкам в одной строке */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Научные степени */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('filters.degrees')}</label>
+                <DropdownMenu 
+                  modal={false} 
+                  open={degreesOpen} 
+                  onOpenChange={setDegreesOpen}
                 >
-                  <DropdownMenuLabel>{t('filters.degrees')}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {DEGREES.map((degree) => (
-                    <DropdownMenuCheckboxItem
-                      key={degree}
-                      checked={selectedDegrees.includes(degree)}
-                      onCheckedChange={() => toggleDegree(degree)}
-                      onSelect={(e) => e.preventDefault()}
-                    >
-                      {degree}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {selectedDegrees.length > 0
+                        ? `${selectedDegrees.length} ${t('filters.selected')}`
+                        : t('filters.selectDegrees')}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    className="w-56"
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <DropdownMenuLabel>{t('filters.degrees')}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {DEGREES.map((degree) => (
+                      <DropdownMenuCheckboxItem
+                        key={degree}
+                        checked={selectedDegrees.includes(degree)}
+                        onCheckedChange={() => toggleDegree(degree)}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {degree}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Языки обучения */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('filters.languages')}</label>
+                <DropdownMenu 
+                  modal={false} 
+                  open={languagesOpen} 
+                  onOpenChange={setLanguagesOpen}
+                >
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {selectedLanguages.length > 0
+                        ? `${selectedLanguages.length} ${t('filters.selected')}`
+                        : t('filters.selectLanguages')}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    className="w-56"
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <DropdownMenuLabel>{t('filters.languages')}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {languages.map((language) => (
+                      <DropdownMenuCheckboxItem
+                        key={language}
+                        checked={selectedLanguages.includes(language)}
+                        onCheckedChange={() => toggleLanguage(language)}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {language}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
             <Separator />
