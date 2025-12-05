@@ -23,14 +23,13 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from '@/components/ui/pagination';
-import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
-import { universities } from '../data/mockData';
+import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, Grid3x3, List } from 'lucide-react';
 import { useCompareStore } from '../store/useCompareStore';
 import { useLocale } from '@/components/LocaleProvider';
 import UniversityCard from '@/components/UniversityCard';
 import AdvisorModal from '@/components/AdvisorModal';
-import { getAiRecommendation } from '../api/universityService';
-import type { IAdvisorRequest, IAdvisorResponse } from '../types';
+import { getAiRecommendation, getUniversities } from '../api/universityService';
+import type { IAdvisorRequest, IAdvisorResponse, IUniversity } from '../types';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -122,8 +121,11 @@ const DEGREES = [
 ];
 
 // Минимальная и максимальная стоимость из данных
-const getPriceRange = (universitiesList: typeof universities) => {
-  const prices = universitiesList.map((u) => u.price);
+const getPriceRange = (universitiesList: IUniversity[]) => {
+  if (universitiesList.length === 0) {
+    return { min: 0, max: 10000000 };
+  }
+  const prices = universitiesList.map((u: IUniversity) => u.price);
   const min = Math.min(...prices);
   const max = Math.max(...prices);
   // Увеличиваем максимальное значение для возможности фильтрации выше текущего максимума
@@ -154,29 +156,59 @@ const HomePage = () => {
   const [filtersVisible, setFiltersVisible] = useState<boolean>(true);
   const [isAdvisorModalOpen, setIsAdvisorModalOpen] = useState<boolean>(false);
   const [advisorRecommendation, setAdvisorRecommendation] = useState<IAdvisorResponse | null>(null);
+  const [universities, setUniversities] = useState<IUniversity[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // Инициализация диапазона цен
+  // Загрузка университетов с API
   useEffect(() => {
-    const range = getPriceRange(universities);
-    setPriceRange([range.min, range.max]);
+    const loadUniversities = async () => {
+      setIsLoading(true);
+      try {
+        const data = await getUniversities();
+        setUniversities(data);
+        // Инициализация диапазона цен после загрузки
+        const range = getPriceRange(data);
+        setPriceRange([range.min, range.max]);
+      } catch (error) {
+        console.error('Ошибка при загрузке университетов:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUniversities();
   }, []);
 
   // Получаем уникальные города
   const cities = useMemo(() => {
-    const citySet = new Set(universities.map((u) => u.city));
-    return Array.from(citySet);
-  }, []);
+    const citySet = new Set(
+      universities
+        .map((u) => u.city)
+        .filter((city) => city && city !== 'string' && city.trim() !== '')
+    );
+    return Array.from(citySet).sort();
+  }, [universities]);
 
-  // Получаем уникальные языки
+  // Получаем уникальные языки (нормализуем регистр)
   const languages = useMemo(() => {
-    const languageSet = new Set<string>();
+    const languageMap = new Map<string, string>(); // храним нормализованную версию как ключ
     universities.forEach((u) => {
       if (u.languages) {
-        u.languages.forEach((lang) => languageSet.add(lang));
+        u.languages.forEach((lang) => {
+          if (lang && lang.trim()) {
+            // Нормализуем: первая буква заглавная, остальные строчные
+            const normalized = lang.trim().charAt(0).toUpperCase() + lang.trim().slice(1).toLowerCase();
+            // Используем Map чтобы сохранить первую встреченную версию с правильным регистром
+            if (!languageMap.has(normalized)) {
+              languageMap.set(normalized, normalized);
+            }
+          }
+        });
       }
     });
-    return Array.from(languageSet).sort();
-  }, []);
+    return Array.from(languageMap.values()).sort();
+  }, [universities]);
 
   // Вычисляем диапазон цен один раз
   const priceRangeData = useMemo(() => getPriceRange(universities), []);
@@ -255,17 +287,30 @@ const HomePage = () => {
     setCurrentPage(1);
   }, [searchQuery, selectedCity, hasDormitory, selectedProfiles.length, selectedProfessions.length, selectedDegrees.length, selectedLanguagesSet.size, priceRange]);
 
-  // Вычисление пагинации
+  // Дублируем университеты для демонстрации пагинации (2-3 раза)
+  const duplicatedUniversities = useMemo(() => {
+    const duplicated = [...filteredUniversities];
+    // Добавляем копии с уникальными ID
+    for (let i = 0; i < 2; i++) {
+      duplicated.push(...filteredUniversities.map(uni => ({
+        ...uni,
+        id: `${uni.id}-copy-${i + 1}`
+      })));
+    }
+    return duplicated;
+  }, [filteredUniversities]);
+
+  // Вычисление пагинации на основе дублированных университетов
   const totalPages = useMemo(() => 
-    Math.ceil(filteredUniversities.length / ITEMS_PER_PAGE),
-    [filteredUniversities.length]
+    Math.ceil(duplicatedUniversities.length / ITEMS_PER_PAGE),
+    [duplicatedUniversities.length]
   );
-  
+
   const paginatedUniversities = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredUniversities.slice(startIndex, endIndex);
-  }, [filteredUniversities, currentPage]);
+    return duplicatedUniversities.slice(startIndex, endIndex);
+  }, [duplicatedUniversities, currentPage]);
 
   // Мемоизируем вычисление страниц для пагинации
   const paginationPages = useMemo(() => {
@@ -407,7 +452,7 @@ const HomePage = () => {
       u.name.toLowerCase().includes(normalizedName) || 
       normalizedName.includes(u.name.toLowerCase())
     );
-  }, []);
+  }, [universities]);
 
   const handleGoToUniversity = useCallback(() => {
     if (advisorRecommendation) {
@@ -782,15 +827,53 @@ const HomePage = () => {
 
       {/* Результаты */}
       <div className="flex flex-col gap-4">
-        {filteredUniversities.length > 0 ? (
+        {isLoading ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">Загрузка университетов...</p>
+            </CardContent>
+          </Card>
+        ) : filteredUniversities.length > 0 ? (
           <>
-            {paginatedUniversities.map((university) => (
-              <UniversityCard
-                key={university.id}
-                university={university}
-                userEntScore={userEntScore}
-              />
-            ))}
+            {/* Переключатель вида отображения */}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-muted-foreground">
+                {t('filters.found')} {duplicatedUniversities.length} {t('filters.universities')}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-9"
+                  aria-label={t('filters.gridView')}
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="h-9"
+                  aria-label={t('filters.listView')}
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className={viewMode === 'grid' 
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
+              : 'flex flex-col gap-4'
+            }>
+              {paginatedUniversities.map((university) => (
+                <UniversityCard
+                  key={university.id}
+                  university={university}
+                  userEntScore={userEntScore}
+                />
+              ))}
+            </div>
             
             {/* Пагинация */}
             {totalPages > 1 && (

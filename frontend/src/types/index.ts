@@ -65,3 +65,60 @@ export interface IAdvisorResponse {
   short_reason: string;
 }
 
+// Типы для API ответов бэкенда
+export interface IBackendUniversity {
+  id: number;
+  name: string;
+  description: string;
+  mission_text: string;
+  history: string;
+  min_ent_score: number;
+  logo_url: string;
+  tour_url: string | null;
+  city: string;
+  has_dormitory: boolean;
+  has_military_dept?: boolean;
+  rating: number;
+  has_tour: boolean;
+  languages: string; // JSON строка или разделенная запятыми
+  number_of_grants: number;
+  exchange_program: boolean;
+  exchange_programs?: string | null; // JSON строка
+  partners?: string | null; // JSON строка
+  foreign_student_opps?: string | null; // JSON строка
+  double_degree_program: boolean;
+  double_degree_programs?: string | null; // JSON строка
+  IELTS_sertificate: boolean;
+  min_ielts?: number | null; // Минимальный балл IELTS
+  format: string; // "private" или "public"
+  price: number;
+  programs?: IBackendProgram[]; // Связанные программы
+  admission_info?: IBackendAdmissionInfo | null; // Admission info
+}
+
+export interface IBackendProgram {
+  id: number;
+  university_id: number;
+  name: string;
+  description: string | null;
+  degree: string;
+  price: number | null;
+  duration: number | null;
+  language: string | null;
+  min_ent_score: number | null;
+  internship: boolean;
+  double_degree_program: boolean;
+  employment: number | null;
+}
+
+export interface IBackendAdmissionInfo {
+  id: number;
+  university_id: number | null;
+  deadline_date: string | null;
+  requirements_text: string | null;
+  requirements: string[] | null;
+  deadlines: string[] | null;
+  scholarships: string[] | null;
+  procedure: string | null;
+}
+

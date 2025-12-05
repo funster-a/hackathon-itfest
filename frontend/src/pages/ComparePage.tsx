@@ -333,7 +333,9 @@ const ComparePage = () => {
                       <TableCell></TableCell>
                       {compareProgramsList.map((item, index) => (
                         <TableCell key={`score-${index}`} className="pl-6">
-                          {item.program.minEntScore ?? '-'}
+                          {item.program.minEntScore != null && item.program.minEntScore > 0
+                            ? item.program.minEntScore
+                            : '-'}
                         </TableCell>
                       ))}
                       <TableCell></TableCell>
@@ -343,10 +345,12 @@ const ComparePage = () => {
                       <TableCell></TableCell>
                       {compareProgramsList.map((item, index) => (
                         <TableCell key={`internship-${index}`} className="pl-6">
-                          {item.program.hasInternship ? (
+                          {item.program.hasInternship === true ? (
                             <Check className="w-5 h-5 text-green-600" />
-                          ) : (
+                          ) : item.program.hasInternship === false ? (
                             <X className="w-5 h-5 text-red-600" />
+                          ) : (
+                            '-'
                           )}
                         </TableCell>
                       ))}
@@ -357,10 +361,12 @@ const ComparePage = () => {
                       <TableCell></TableCell>
                       {compareProgramsList.map((item, index) => (
                         <TableCell key={`double-${index}`} className="pl-6">
-                          {item.program.hasDoubleDegree ? (
+                          {item.program.hasDoubleDegree === true ? (
                             <Check className="w-5 h-5 text-green-600" />
-                          ) : (
+                          ) : item.program.hasDoubleDegree === false ? (
                             <X className="w-5 h-5 text-red-600" />
+                          ) : (
+                            '-'
                           )}
                         </TableCell>
                       ))}
@@ -371,7 +377,7 @@ const ComparePage = () => {
                       <TableCell></TableCell>
                       {compareProgramsList.map((item, index) => (
                         <TableCell key={`employment-${index}`} className="pl-6">
-                          {item.program.employmentRate !== null && item.program.employmentRate !== undefined
+                          {item.program.employmentRate != null && item.program.employmentRate > 0
                             ? `${item.program.employmentRate}%`
                             : '-'}
                         </TableCell>

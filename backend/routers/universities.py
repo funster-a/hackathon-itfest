@@ -1,11 +1,15 @@
-from typing import Annotated
+from typing import Annotated, List
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.orm import Session
 from starlette import status
 
 from models import University, Program, AdmissionInfo
-from requests import UniversityRequest, ProgramRequest, AdmissionInfoRequest, AIRequest, AdvisorRequest
+from requests import (
+    UniversityRequest, ProgramRequest, AdmissionInfoRequest, AIRequest, AdvisorRequest,
+    UniversityResponse, ProgramResponse, AdmissionInfoResponse
+)
 from database import SessionLocal
 from groq import requestAI
 
@@ -21,21 +25,91 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-#get requests
-@router.get('/', status_code=status.HTTP_200_OK, tags=['Universities'])
-async def read_universities(db: db_dependency):
-    return db.query(University).all()
+# Helper function to parse JSON fields
+def parse_json_field(field: str | None) -> List[str] | None:
+    if not field:
+        return None
+    try:
+        parsed = json.loads(field)
+        return parsed if isinstance(parsed, list) else None
+    except:
+        return None
 
-@router.get('/get/{university_id}', status_code=status.HTTP_200_OK, tags=['Universities'])
+#get requests
+@router.get('/', status_code=status.HTTP_200_OK, tags=['Universities'], response_model=List[UniversityResponse])
+async def read_universities(db: db_dependency):
+    universities = db.query(University).all()
+    result = []
+    for uni in universities:
+        # Получаем программы для университета
+        programs = db.query(Program).filter(Program.university_id == uni.id).all()
+        program_responses = [ProgramResponse.model_validate(p) for p in programs]
+        
+        # Получаем admission info
+        admission = db.query(AdmissionInfo).filter(AdmissionInfo.university_id == uni.id).first()
+        admission_response = None
+        if admission:
+            # Парсим JSON поля перед валидацией
+            admission_dict = {
+                'id': admission.id,
+                'university_id': admission.university_id,
+                'deadline_date': admission.deadline_date,
+                'requirements_text': admission.requirements_text,
+                'requirements': parse_json_field(admission.requirements) if admission.requirements else None,
+                'deadlines': parse_json_field(admission.deadlines) if admission.deadlines else None,
+                'scholarships': parse_json_field(admission.scholarships) if admission.scholarships else None,
+                'procedure': admission.procedure,
+            }
+            admission_response = AdmissionInfoResponse.model_validate(admission_dict)
+        
+        # Создаем ответ с правильной обработкой JSON полей
+        uni_dict = {
+            **{k: v for k, v in uni.__dict__.items() if not k.startswith('_')},
+            'programs': program_responses if program_responses else None,
+            'admission_info': admission_response
+        }
+        result.append(UniversityResponse.model_validate(uni_dict))
+    return result
+
+@router.get('/get/{university_id}', status_code=status.HTTP_200_OK, tags=['Universities'], response_model=UniversityResponse)
 async def read_university(db: db_dependency, university_id: int = Path(gt=0)):
     university_model = db.query(University).filter(University.id == university_id).first()
-    if university_model is not None:
-        return university_model
-    raise HTTPException(status_code=404, detail='university not found')
+    if university_model is None:
+        raise HTTPException(status_code=404, detail='university not found')
+    
+    # Получаем программы
+    programs = db.query(Program).filter(Program.university_id == university_id).all()
+    program_responses = [ProgramResponse.model_validate(p) for p in programs]
+    
+    # Получаем admission info
+    admission = db.query(AdmissionInfo).filter(AdmissionInfo.university_id == university_id).first()
+    admission_response = None
+    if admission:
+        # Парсим JSON поля перед валидацией
+        admission_dict = {
+            'id': admission.id,
+            'university_id': admission.university_id,
+            'deadline_date': admission.deadline_date,
+            'requirements_text': admission.requirements_text,
+            'requirements': parse_json_field(admission.requirements) if admission.requirements else None,
+            'deadlines': parse_json_field(admission.deadlines) if admission.deadlines else None,
+            'scholarships': parse_json_field(admission.scholarships) if admission.scholarships else None,
+            'procedure': admission.procedure,
+        }
+        admission_response = AdmissionInfoResponse.model_validate(admission_dict)
+    
+    # Создаем ответ с правильной обработкой JSON полей
+    uni_dict = {
+        **{k: v for k, v in university_model.__dict__.items() if not k.startswith('_')},
+        'programs': program_responses if program_responses else None,
+        'admission_info': admission_response
+    }
+    return UniversityResponse.model_validate(uni_dict)
 
-@router.get('/programs', status_code=status.HTTP_200_OK, tags=['Programs'])
+@router.get('/programs', status_code=status.HTTP_200_OK, tags=['Programs'], response_model=List[ProgramResponse])
 async def read_programs(db: db_dependency):
-    return db.query(Program).all()
+    programs = db.query(Program).all()
+    return [ProgramResponse.model_validate(p) for p in programs]
 
 @router.get('/programs/get/{program_id}', status_code=status.HTTP_200_OK, tags=['Programs'])
 async def read_program(db: db_dependency, program_id: int = Path(gt=0)):
@@ -81,8 +155,10 @@ async def update_university(db: db_dependency, university_request: UniversityReq
     university_model = db.query(University).filter(University.id == university_id).first()
     if university_model is None:
         raise HTTPException(status_code=404, detail='university not found')
+    
+    # Обновляем все поля
     university_model.name = university_request.name
-    university_model.description  = university_request.description
+    university_model.description = university_request.description
     university_model.mission_text = university_request.mission_text
     university_model.logo_url = university_request.logo_url
     university_model.tour_url = university_request.tour_url
@@ -90,13 +166,19 @@ async def update_university(db: db_dependency, university_request: UniversityReq
     university_model.history = university_request.history
     university_model.min_ent_score = university_request.min_ent_score
     university_model.has_dormitory = university_request.has_dormitory
+    university_model.has_military_dept = university_request.has_military_dept
     university_model.rating = university_request.rating
     university_model.has_tour = university_request.has_tour
     university_model.languages = university_request.languages
     university_model.number_of_grants = university_request.number_of_grants
     university_model.exchange_program = university_request.exchange_program
+    university_model.exchange_programs = university_request.exchange_programs
+    university_model.partners = university_request.partners
+    university_model.foreign_student_opps = university_request.foreign_student_opps
     university_model.double_degree_program = university_request.double_degree_program
+    university_model.double_degree_programs = university_request.double_degree_programs
     university_model.IELTS_sertificate = university_request.IELTS_sertificate
+    university_model.min_ielts = university_request.min_ielts
     university_model.format = university_request.format
     university_model.price = university_request.price
 
@@ -127,8 +209,14 @@ async def update_admission(db: db_dependency, admission_request: AdmissionInfoRe
     admission_model = db.query(AdmissionInfo).filter(AdmissionInfo.id == admission_id).first()
     if admission_model is None:
         raise HTTPException(status_code=404, detail='admission not found')
+    
+    admission_model.university_id = admission_request.university_id
     admission_model.deadline_date = admission_request.deadline_date
-    admission_model.requirements_text  = admission_request.requirements_text
+    admission_model.requirements_text = admission_request.requirements_text
+    admission_model.requirements = admission_request.requirements
+    admission_model.deadlines = admission_request.deadlines
+    admission_model.scholarships = admission_request.scholarships
+    admission_model.procedure = admission_request.procedure
 
     db.add(admission_model)
     db.commit()

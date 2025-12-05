@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, Star, Check, X, Play, ExternalLink, Heart, Scale, Calendar, GraduationCap, Globe } from 'lucide-react';
-import { universities } from '../data/mockData';
 import { useCompareStore } from '../store/useCompareStore';
 import { useFavoritesStore } from '../store/useFavoritesStore';
 import { useLocale } from '@/components/LocaleProvider';
@@ -16,10 +16,34 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { getUniversityById } from '../api/universityService';
+import type { IUniversity } from '../types';
+import { universities as mockUniversities } from '../data/mockData';
 
 const UniversityDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
-  const university = universities.find((u) => u.id === id);
+  const [university, setUniversity] = useState<IUniversity | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const loadUniversity = async () => {
+      if (!id) return;
+      setIsLoading(true);
+      try {
+        const data = await getUniversityById(id);
+        setUniversity(data);
+      } catch (error) {
+        console.error('Ошибка при загрузке университета:', error);
+        // Fallback на mock данные
+        const mockUni = mockUniversities.find((u) => u.id === id);
+        setUniversity(mockUni || null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUniversity();
+  }, [id]);
   const { addToCompare, compareList, addProgramToCompare, compareProgramsList } = useCompareStore();
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavoritesStore();
   const { t } = useLocale();
@@ -48,6 +72,18 @@ const UniversityDetailsPage = () => {
     if (!university || !id) return;
     addProgramToCompare(id, university.name, program);
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">Загрузка информации об университете...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!university) {
     return (
