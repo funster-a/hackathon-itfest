@@ -45,11 +45,11 @@ const adaptUniversity = (backendUni: IBackendUniversity, programs: IBackendProgr
       tuitionFee: p.price || undefined,
       // 0 означает отсутствие данных для числовых полей
       minEntScore: (p.min_ent_score != null && p.min_ent_score > 0) ? p.min_ent_score : null,
-      // Для boolean полей: в SQLite хранится как 0/1, null означает отсутствие данных
-      // Если значение 1, то true; если 0 или null, то undefined (отсутствие данных)
-      // Это позволяет показывать "-" вместо крестика, если данных нет
-      hasInternship: p.internship === 1 ? true : undefined,
-      hasDoubleDegree: p.double_degree_program === 1 ? true : undefined,
+      // Для boolean полей: преобразуем false в undefined, чтобы показывать "-" вместо крестика
+      // Это позволяет различать "нет данных" (undefined) и "данные есть, но false" (false)
+      // Но так как в базе 0 означает отсутствие данных, преобразуем false в undefined
+      hasInternship: p.internship === true ? true : undefined,
+      hasDoubleDegree: p.double_degree_program === true ? true : undefined,
       employmentRate: (p.employment != null && p.employment > 0) ? p.employment : null,
     }));
 
