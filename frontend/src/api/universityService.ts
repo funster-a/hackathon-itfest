@@ -12,6 +12,8 @@ import { universities as mockUniversities } from '../data/mockData';
 
 // Адаптер для преобразования данных бэкенда в формат фронтенда
 const adaptUniversity = (backendUni: IBackendUniversity, programs: IBackendProgram[] = []): IUniversity => {
+  // Используем программы из ответа API, если они есть, иначе используем переданные
+  const uniPrograms = backendUni.programs || programs;
   // Парсим languages (может быть JSON строка или разделенная запятыми)
   let languagesArray: string[] = [];
   try {
@@ -26,30 +28,42 @@ const adaptUniversity = (backendUni: IBackendUniversity, programs: IBackendProgr
   }
 
   // Преобразуем программы
-  const academicPrograms: IAcademicProgram[] = programs
+  const academicPrograms: IAcademicProgram[] = uniPrograms
     .filter(p => p.university_id === backendUni.id)
     .map(p => ({
       name: p.name,
       degree: p.degree as 'Bachelor' | 'Master' | 'PhD',
-      description: p.description,
-      duration: p.duration,
-      language: p.language,
-      tuitionFee: p.price,
-      minEntScore: p.min_ent_score,
+      description: p.description || undefined,
+      duration: p.duration || undefined,
+      language: p.language || undefined,
+      tuitionFee: p.price || undefined,
+      minEntScore: p.min_ent_score ?? null,
       hasInternship: p.internship,
       hasDoubleDegree: p.double_degree_program,
-      employmentRate: p.employment,
+      employmentRate: p.employment ?? null,
     }));
+
+  // Парсим JSON поля для international
+  const parseJsonField = (field: string | null | undefined): string[] => {
+    if (!field) return [];
+    try {
+      const parsed = JSON.parse(field);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
 
   // Формируем объект international
   const international: IInternational = {
-    exchangePrograms: backendUni.exchange_program ? ['Программы обмена доступны'] : [],
-    partners: [],
-    foreignStudentOpps: [],
+    exchangePrograms: parseJsonField(backendUni.exchange_programs), // Только если есть конкретные программы
+    partners: parseJsonField(backendUni.partners),
+    foreignStudentOpps: parseJsonField(backendUni.foreign_student_opps),
     hasExchangeProgram: backendUni.exchange_program,
     hasDoubleDegree: backendUni.double_degree_program,
     requiresIELTS: backendUni.IELTS_sertificate,
-    doubleDegreePrograms: backendUni.double_degree_program ? ['Программы двойного диплома доступны'] : [],
+    minIELTS: backendUni.min_ielts ? Number(backendUni.min_ielts) : undefined,
+    doubleDegreePrograms: parseJsonField(backendUni.double_degree_programs), // Только если есть конкретные программы
   };
 
   return {
@@ -60,7 +74,7 @@ const adaptUniversity = (backendUni: IBackendUniversity, programs: IBackendProgr
     price: backendUni.price,
     minEntScore: backendUni.min_ent_score,
     hasDormitory: backendUni.has_dormitory,
-    hasMilitaryDept: false, // Не приходит с бэкенда, по умолчанию false
+    hasMilitaryDept: backendUni.has_military_dept || false,
     rating: Number(backendUni.rating),
     hasTour: backendUni.has_tour,
     tourUrl: backendUni.tour_url || undefined,
@@ -69,6 +83,12 @@ const adaptUniversity = (backendUni: IBackendUniversity, programs: IBackendProgr
     languages: languagesArray.length > 0 ? languagesArray : undefined,
     grantsPerYear: backendUni.number_of_grants,
     academicPrograms: academicPrograms.length > 0 ? academicPrograms : undefined,
+    admissions: backendUni.admission_info ? {
+      requirements: backendUni.admission_info.requirements || [],
+      deadlines: backendUni.admission_info.deadlines || [],
+      scholarships: backendUni.admission_info.scholarships || [],
+      procedure: backendUni.admission_info.procedure || '',
+    } : undefined,
     international: international,
     mission: backendUni.mission_text,
     history: backendUni.history,
@@ -78,15 +98,9 @@ const adaptUniversity = (backendUni: IBackendUniversity, programs: IBackendProgr
 // API функции
 export const getUniversities = async (): Promise<IUniversity[]> => {
   try {
-    const [universitiesResponse, programsResponse] = await Promise.all([
-      api.get<IBackendUniversity[]>('/'),
-      api.get<IBackendProgram[]>('/programs').catch(() => ({ data: [] })), // Если программ нет, возвращаем пустой массив
-    ]);
-
-    const universities = universitiesResponse.data;
-    const programs = programsResponse.data || [];
-
-    return universities.map(uni => adaptUniversity(uni, programs));
+    const universitiesResponse = await api.get<IBackendUniversity[]>('/');
+    // Программы теперь приходят вместе с университетами
+    return universitiesResponse.data.map(uni => adaptUniversity(uni, []));
   } catch (error) {
     console.error('Ошибка при получении университетов:', error);
     // Fallback на mock данные
@@ -101,13 +115,9 @@ export const getUniversityById = async (id: string): Promise<IUniversity | null>
       return null;
     }
 
-    const [universityResponse, programsResponse] = await Promise.all([
-      api.get<IBackendUniversity>(`/get/${universityId}`),
-      api.get<IBackendProgram[]>('/programs').catch(() => ({ data: [] })),
-    ]);
-
-    const programs = programsResponse.data?.filter(p => p.university_id === universityId) || [];
-    return adaptUniversity(universityResponse.data, programs);
+    const universityResponse = await api.get<IBackendUniversity>(`/get/${universityId}`);
+    // Программы и admission_info теперь приходят вместе с университетом
+    return adaptUniversity(universityResponse.data, []);
   } catch (error) {
     console.error('Ошибка при получении университета:', error);
     // Fallback на mock данные
