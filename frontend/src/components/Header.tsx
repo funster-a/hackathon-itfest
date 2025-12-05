@@ -50,11 +50,13 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 bg-background border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="relative flex items-center justify-between h-16">
           <Link to="/" className="flex items-center">
             <h1 className="text-xl font-bold text-foreground">{t('header.title')}</h1>
           </Link>
-          <nav className="flex items-center gap-4">
+          
+          {/* Навигация по центру */}
+          <nav className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-4">
             <Link
               to="/"
               className={`text-sm font-medium transition-colors ${
@@ -75,6 +77,10 @@ const Header = () => {
             >
               {t('header.compare')}
             </Link>
+          </nav>
+
+          {/* Управление справа */}
+          <div className="flex items-center gap-2">
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -119,7 +125,7 @@ const Header = () => {
                 <Moon className="h-5 w-5" />
               )}
             </Button>
-          </nav>
+          </div>
         </div>
       </div>
     </header>
