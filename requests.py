@@ -6,6 +6,7 @@ class UniversityRequest(BaseModel):
     description: str = Field(min_length=3)
     mission_text: str
     logo_url: str
+    tour_url: str
     city: str
 
 class ProgramRequest(BaseModel):

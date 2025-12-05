@@ -8,6 +8,7 @@ class University(Base):
     description = Column(String)
     mission_text = Column(String)
     logo_url = Column(String)
+    tour_url = Column(String, nullable=True)
     city = Column(String)
 
 class Program(Base):

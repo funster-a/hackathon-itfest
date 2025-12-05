@@ -84,6 +84,7 @@ async def update_university(db: db_dependency, university_request: UniversityReq
     university_model.description  = university_request.description
     university_model.mission_text = university_request.mission_text
     university_model.logo_url = university_request.logo_url
+    university_model.tour_url = university_request.tour_url
     university_model.city = university_request.city
 
     db.add(university_model)
