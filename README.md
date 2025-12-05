@@ -1,8 +1,34 @@
-to install:
-1(in bash): python -m venv venv
-2:(windows): venv/Scripts/active ; (mac, linux): source venv/bin/activate
-3: pip install -r requirements.txt
-4: get groq api key -> https://console.groq.com/keys
-5: create .env file and paste API_KEY='yourapikey'
-6: uvicorn main:app --reload
-7: open http://127.0.0.1:8000/docs in your browser
+# ZeroHub
+
+## Backend
+
+```bash
+cd backend
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+# Mac/Linux
+source venv/bin/activate
+
+pip install -r requirements.txt
+
+# Создайте .env файл с API ключом Groq
+# API_KEY=your_groq_api_key_here
+
+uvicorn main:app --reload
+```
+
+Сервер: http://127.0.0.1:8000  
+Документация: http://127.0.0.1:8000/docs
+
+## Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Приложение: http://localhost:5173
