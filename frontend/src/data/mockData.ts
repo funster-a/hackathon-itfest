@@ -11,6 +11,8 @@ export const universities: IUniversity[] = [
     hasDormitory: true,
     hasMilitaryDept: true,
     rating: 4.5,
+    hasTour: true,
+    tourUrl: 'https://my.matterport.com/show/?m=JGPnGQFhhcm',
   },
   {
     id: '2',
@@ -22,6 +24,7 @@ export const universities: IUniversity[] = [
     hasDormitory: true,
     hasMilitaryDept: false,
     rating: 4.2,
+    hasTour: false,
   },
   {
     id: '3',
@@ -33,6 +36,8 @@ export const universities: IUniversity[] = [
     hasDormitory: true,
     hasMilitaryDept: true,
     rating: 4.8,
+    hasTour: true,
+    tourUrl: 'https://my.matterport.com/show/?m=JGPnGQFhhcm',
   },
 ];
 

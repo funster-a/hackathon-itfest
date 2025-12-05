@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Star } from 'lucide-react';
+import { MapPin, Star, Box } from 'lucide-react';
 import type { IUniversity } from '../types';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,17 +30,32 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
           loading="lazy"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+        {university.hasTour && (
+          <Badge
+            variant="secondary"
+            className="absolute top-4 right-4 bg-white/90 text-black hover:bg-white shadow-lg"
+          >
+            <Box className="w-3 h-3 mr-1.5" />
+            360° Tour
+          </Badge>
+        )}
       </div>
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
-          <Link
-            to={`/university/${university.id}`}
-            className="flex-1"
-          >
-            <h3 className="text-xl font-semibold text-foreground hover:text-foreground/80 transition-colors">
-              {university.name}
-            </h3>
-          </Link>
+          <div className="flex-1">
+            <Link
+              to={`/university/${university.id}`}
+              className="block"
+            >
+              <h3 className="text-xl font-semibold text-foreground hover:text-foreground/80 transition-colors">
+                {university.name}
+              </h3>
+            </Link>
+            <div className="flex items-center gap-1.5 mt-1">
+              <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+              <span className="text-sm text-foreground font-medium">{university.rating}</span>
+            </div>
+          </div>
           {showIndicator && (
             <Badge
               variant={hasChance ? 'secondary' : 'destructive'}
@@ -66,10 +81,6 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
           </div>
           <div className="text-foreground">
             <span className="font-medium">Проходной балл:</span> {university.minEntScore}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-            <span className="text-foreground">{university.rating}/5</span>
           </div>
         </div>
       </CardContent>
