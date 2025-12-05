@@ -6,10 +6,12 @@ import { Separator } from '@/components/ui/separator';
 import { Search, Filter, X } from 'lucide-react';
 import { universities } from '../data/mockData';
 import { useCompareStore } from '../store/useCompareStore';
+import { useLocale } from '@/components/LocaleProvider';
 import UniversityCard from '@/components/UniversityCard';
 
 const HomePage = () => {
   const { userEntScore, setEntScore } = useCompareStore();
+  const { t } = useLocale();
   const [entScoreInput, setEntScoreInput] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
@@ -64,7 +66,7 @@ const HomePage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold tracking-tight mb-8">Каталог университетов</h1>
+      <h1 className="text-3xl font-bold tracking-tight mb-8">{t('home.title')}</h1>
 
       {/* Блок фильтров и советника */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -74,7 +76,7 @@ const HomePage = () => {
             <div className="flex items-center justify-between h-8">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Filter className="w-5 h-5" />
-                Фильтры
+                {t('filters.title')}
               </h2>
               <div className="h-8 flex items-center">
                 {hasActiveFilters && (
@@ -85,7 +87,7 @@ const HomePage = () => {
                     className="h-8"
                   >
                     <X className="w-4 h-4 mr-1" />
-                    Сбросить
+                    {t('filters.reset')}
                   </Button>
                 )}
               </div>
@@ -94,14 +96,14 @@ const HomePage = () => {
           <CardContent className="space-y-4">
             {/* Поиск */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Поиск</label>
+              <label className="text-sm font-medium">{t('filters.search')}</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Название университета..."
+                  placeholder={t('filters.searchPlaceholder')}
                   className="pl-9"
                 />
               </div>
@@ -111,7 +113,7 @@ const HomePage = () => {
 
             {/* Фильтр по городу */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Город</label>
+              <label className="text-sm font-medium">{t('filters.city')}</label>
               <div className="flex flex-wrap gap-2">
                 {cities.map((city) => (
                   <Button
@@ -131,7 +133,7 @@ const HomePage = () => {
 
             {/* Фильтр по общежитию */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Общежитие</label>
+              <label className="text-sm font-medium">{t('filters.dormitory')}</label>
               <div className="flex gap-2">
                 <Button
                   variant={hasDormitory === true ? 'default' : 'outline'}
@@ -139,7 +141,7 @@ const HomePage = () => {
                   onClick={() => setHasDormitory(hasDormitory === true ? null : true)}
                   className="flex-1"
                 >
-                  Есть
+                  {t('filters.dormitoryYes')}
                 </Button>
                 <Button
                   variant={hasDormitory === false ? 'default' : 'outline'}
@@ -147,7 +149,7 @@ const HomePage = () => {
                   onClick={() => setHasDormitory(hasDormitory === false ? null : false)}
                   className="flex-1"
                 >
-                  Нет
+                  {t('filters.dormitoryNo')}
                 </Button>
               </div>
             </div>
@@ -156,7 +158,7 @@ const HomePage = () => {
 
             {/* Фильтр по военной кафедре */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Военная кафедра</label>
+              <label className="text-sm font-medium">{t('filters.militaryDept')}</label>
               <div className="flex gap-2">
                 <Button
                   variant={hasMilitaryDept === true ? 'default' : 'outline'}
@@ -164,7 +166,7 @@ const HomePage = () => {
                   onClick={() => setHasMilitaryDept(hasMilitaryDept === true ? null : true)}
                   className="flex-1"
                 >
-                  Есть
+                  {t('filters.militaryDeptYes')}
                 </Button>
                 <Button
                   variant={hasMilitaryDept === false ? 'default' : 'outline'}
@@ -172,7 +174,7 @@ const HomePage = () => {
                   onClick={() => setHasMilitaryDept(hasMilitaryDept === false ? null : false)}
                   className="flex-1"
                 >
-                  Нет
+                  {t('filters.militaryDeptNo')}
                 </Button>
               </div>
             </div>
@@ -182,7 +184,7 @@ const HomePage = () => {
         {/* Абитуриент-Советник - справа */}
         <Card>
           <CardHeader>
-            <h2 className="text-lg font-semibold">Абитуриент-Советник</h2>
+            <h2 className="text-lg font-semibold">{t('advisor.title')}</h2>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-2">
@@ -192,11 +194,11 @@ const HomePage = () => {
                 onChange={(e) => handleEntScoreChange(e.target.value)}
                 min="0"
                 max="140"
-                placeholder="Твой балл ЕНТ"
+                placeholder={t('advisor.inputPlaceholder')}
                 className="w-full"
               />
               <p className="text-sm text-muted-foreground">
-                Введите ваш балл ЕНТ (0-140) для расчета шансов на грант
+                {t('advisor.description')}
               </p>
             </div>
           </CardContent>
@@ -216,13 +218,13 @@ const HomePage = () => {
         ) : (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">Университеты не найдены</p>
+              <p className="text-muted-foreground">{t('results.notFound')}</p>
               <Button
                 variant="outline"
                 onClick={clearFilters}
                 className="mt-4"
               >
-                Сбросить фильтры
+                {t('results.resetFilters')}
               </Button>
             </CardContent>
           </Card>

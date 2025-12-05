@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCompareStore } from '../store/useCompareStore';
+import { useLocale } from './LocaleProvider';
 
 interface UniversityCardProps {
   university: IUniversity;
@@ -13,6 +14,7 @@ interface UniversityCardProps {
 
 const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
   const { addToCompare, compareList } = useCompareStore();
+  const { t } = useLocale();
   const hasChance = userEntScore !== null && userEntScore >= university.minEntScore;
   const showIndicator = userEntScore !== null;
   const isInCompare = compareList.some((u) => u.id === university.id);
@@ -36,7 +38,7 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
             className="absolute top-4 right-4 bg-white/90 text-black hover:bg-white shadow-lg"
           >
             <Box className="w-3 h-3 mr-1.5" />
-            360° Tour
+            {t('card.tour')}
           </Badge>
         )}
       </div>
@@ -61,7 +63,7 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
               variant={hasChance ? 'secondary' : 'destructive'}
               className="ml-auto"
             >
-              {hasChance ? 'Шанс на грант' : 'Только платно'}
+              {hasChance ? t('card.chanceForGrant') : t('card.onlyPaid')}
             </Badge>
           )}
         </div>
@@ -76,11 +78,11 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
             <span className="text-foreground">{university.city}</span>
           </div>
           <div className="text-foreground">
-            <span className="font-medium">Стоимость:</span>{' '}
+            <span className="font-medium">{t('card.cost')}</span>{' '}
             {university.price.toLocaleString()} ₸
           </div>
           <div className="text-foreground">
-            <span className="font-medium">Проходной балл:</span> {university.minEntScore}
+            <span className="font-medium">{t('card.minScore')}</span> {university.minEntScore}
           </div>
         </div>
       </CardContent>
@@ -91,7 +93,7 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
           disabled={isInCompare}
           className="w-full"
         >
-          {isInCompare ? 'Уже в сравнении' : 'Добавить к сравнению'}
+          {isInCompare ? t('card.alreadyInCompare') : t('card.addToCompare')}
         </Button>
       </CardFooter>
     </Card>

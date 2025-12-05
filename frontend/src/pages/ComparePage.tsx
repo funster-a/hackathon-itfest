@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Trash2, Check, X, ArrowLeft } from 'lucide-react';
 import { useCompareStore } from '../store/useCompareStore';
+import { useLocale } from '@/components/LocaleProvider';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
   Table,
@@ -14,16 +15,17 @@ import { Button } from '@/components/ui/button';
 
 const ComparePage = () => {
   const { compareList, removeFromCompare } = useCompareStore();
+  const { t } = useLocale();
 
   if (compareList.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-8">Сравнение университетов</h1>
+        <h1 className="text-3xl font-bold tracking-tight mb-8">{t('compare.title')}</h1>
         <Card>
           <CardContent className="p-12 text-center">
-            <p className="text-muted-foreground mb-6">Добавьте вузы для сравнения</p>
+            <p className="text-muted-foreground mb-6">{t('compare.empty')}</p>
             <Button asChild>
-              <Link to="/">Перейти к каталогу</Link>
+              <Link to="/">{t('compare.goToCatalog')}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -33,13 +35,13 @@ const ComparePage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold tracking-tight mb-8">Сравнение университетов</h1>
+      <h1 className="text-3xl font-bold tracking-tight mb-8">{t('compare.title')}</h1>
       <Card>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Параметр</TableHead>
+                <TableHead className="w-[200px]">{t('compare.parameter')}</TableHead>
                 {compareList.map((university) => (
                   <TableHead key={university.id}>
                     <div className="flex items-center justify-between">
@@ -65,13 +67,13 @@ const ComparePage = () => {
             </TableHeader>
             <TableBody>
               <TableRow>
-                <TableCell className="font-medium">Город</TableCell>
+                <TableCell className="font-medium">{t('compare.city')}</TableCell>
                 {compareList.map((university) => (
                   <TableCell key={university.id}>{university.city}</TableCell>
                 ))}
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Стоимость</TableCell>
+                <TableCell className="font-medium">{t('compare.cost')}</TableCell>
                 {compareList.map((university) => (
                   <TableCell key={university.id}>
                     {university.price.toLocaleString()} ₸
@@ -79,19 +81,19 @@ const ComparePage = () => {
                 ))}
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Рейтинг</TableCell>
+                <TableCell className="font-medium">{t('compare.rating')}</TableCell>
                 {compareList.map((university) => (
                   <TableCell key={university.id}>{university.rating}/5</TableCell>
                 ))}
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Проходной балл на грант</TableCell>
+                <TableCell className="font-medium">{t('compare.minScore')}</TableCell>
                 {compareList.map((university) => (
                   <TableCell key={university.id}>{university.minEntScore}</TableCell>
                 ))}
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Общежитие</TableCell>
+                <TableCell className="font-medium">{t('compare.dormitory')}</TableCell>
                 {compareList.map((university) => (
                   <TableCell key={university.id}>
                     {university.hasDormitory ? (
@@ -103,7 +105,7 @@ const ComparePage = () => {
                 ))}
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Военная кафедра</TableCell>
+                <TableCell className="font-medium">{t('compare.militaryDept')}</TableCell>
                 {compareList.map((university) => (
                   <TableCell key={university.id}>
                     {university.hasMilitaryDept ? (
@@ -123,7 +125,7 @@ const ComparePage = () => {
         className="inline-flex items-center mt-6 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Вернуться к каталогу
+        {t('compare.backToCatalog')}
       </Link>
     </div>
   );
