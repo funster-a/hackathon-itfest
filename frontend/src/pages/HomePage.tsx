@@ -324,9 +324,8 @@ const HomePage = () => {
               </div>
             </div>
           </CardHeader>
-          {filtersVisible && (
-            <CardContent className="space-y-4">
-            {/* Поиск */}
+          <CardContent className="space-y-4">
+            {/* Поиск - всегда видим */}
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('filters.search')}</label>
               <div className="relative">
@@ -341,7 +340,9 @@ const HomePage = () => {
               </div>
             </div>
 
-            <Separator />
+            {filtersVisible && (
+              <>
+                <Separator />
 
             {/* Фильтр по городу */}
             <div className="space-y-2">
@@ -540,8 +541,9 @@ const HomePage = () => {
                 {t('filters.militaryDept')}
               </label>
             </div>
-            </CardContent>
-          )}
+              </>
+            )}
+          </CardContent>
         </Card>
 
         {/* Абитуриент-Советник - справа */}
