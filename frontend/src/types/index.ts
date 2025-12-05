@@ -2,6 +2,13 @@ export interface IAcademicProgram {
   name: string;
   degree: 'Bachelor' | 'Master' | 'PhD';
   description?: string;
+  duration?: number; // Продолжительность в годах
+  language?: string; // Язык обучения
+  tuitionFee?: number; // Стоимость обучения для программы
+  minEntScore?: number; // Минимальный балл ЕНТ
+  hasInternship?: boolean; // Наличие практики/стажировки
+  hasDoubleDegree?: boolean; // Возможность двойного диплома
+  employmentRate?: number; // Процент трудоустройства после выпуска
 }
 
 export interface IAdmissions {
