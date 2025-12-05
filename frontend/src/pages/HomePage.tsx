@@ -188,10 +188,13 @@ const HomePage = () => {
   );
 
   // Создаем Set для быстрой проверки языков
-  const selectedLanguagesSet = useMemo(() => 
-    new Set(selectedLanguages), 
-    [selectedLanguages]
-  );
+  // Оптимизация: создаем Set только если есть выбранные языки
+  const selectedLanguagesSet = useMemo(() => {
+    if (selectedLanguages.length === 0) {
+      return new Set<string>();
+    }
+    return new Set(selectedLanguages);
+  }, [selectedLanguages]);
 
   const handleEntScoreChange = useCallback((value: string) => {
     setEntScoreInput(value);
@@ -203,11 +206,13 @@ const HomePage = () => {
 
   // Фильтрация университетов (оптимизированная версия)
   const filteredUniversities = useMemo(() => {
+    const hasLanguageFilter = selectedLanguagesSet.size > 0;
+    
+    // Ранний выход если нет активных фильтров
     if (!normalizedSearchQuery && !selectedCity && !hasDormitory && 
-        selectedLanguages.length === 0 && 
+        !hasLanguageFilter && 
         priceRange[0] === priceRangeData.min && 
         priceRange[1] === priceRangeData.max) {
-      // Если нет активных фильтров, возвращаем все университеты
       return universities;
     }
 
@@ -228,9 +233,15 @@ const HomePage = () => {
       if (university.price < priceRange[0] || university.price > priceRange[1]) {
         return false;
       }
-      // Фильтр по языкам (используем Set для быстрой проверки)
-      if (selectedLanguagesSet.size > 0) {
-        if (!university.languages || !university.languages.some(lang => selectedLanguagesSet.has(lang))) {
+      // Фильтр по языкам (оптимизированная проверка)
+      if (hasLanguageFilter) {
+        // Если у университета нет языков, сразу исключаем
+        if (!university.languages || university.languages.length === 0) {
+          return false;
+        }
+        // Проверяем пересечение языков (используем Set для O(1) проверки)
+        // .some() уже делает ранний выход при первом совпадении
+        if (!university.languages.some(lang => selectedLanguagesSet.has(lang))) {
           return false;
         }
       }
@@ -239,9 +250,10 @@ const HomePage = () => {
   }, [normalizedSearchQuery, selectedCity, hasDormitory, priceRange, selectedLanguagesSet, priceRangeData]);
 
   // Сброс страницы при изменении фильтров
+  // Используем selectedLanguagesSet.size вместо массива для лучшей производительности
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCity, hasDormitory, selectedProfiles, selectedProfessions, selectedDegrees, selectedLanguages, priceRange]);
+  }, [searchQuery, selectedCity, hasDormitory, selectedProfiles.length, selectedProfessions.length, selectedDegrees.length, selectedLanguagesSet.size, priceRange]);
 
   // Вычисление пагинации
   const totalPages = useMemo(() => 
@@ -321,10 +333,10 @@ const HomePage = () => {
     selectedProfiles.length > 0 || 
     selectedProfessions.length > 0 ||
     selectedDegrees.length > 0 ||
-    selectedLanguages.length > 0 ||
+    selectedLanguagesSet.size > 0 ||
     priceRange[0] !== priceRangeData.min ||
     priceRange[1] !== priceRangeData.max,
-    [selectedCity, hasDormitory, selectedProfiles.length, selectedProfessions.length, selectedDegrees.length, selectedLanguages.length, priceRange, priceRangeData]
+    [selectedCity, hasDormitory, selectedProfiles.length, selectedProfessions.length, selectedDegrees.length, selectedLanguagesSet.size, priceRange, priceRangeData]
   );
 
   const toggleProfile = useCallback((profile: string) => {
