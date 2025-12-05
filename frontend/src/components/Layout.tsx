@@ -6,7 +6,7 @@ const Layout = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main>
+      <main className="pt-16">
         <Outlet />
       </main>
       <ScrollToTop />
