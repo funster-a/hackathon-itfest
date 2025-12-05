@@ -67,7 +67,7 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
         <div className="absolute top-4 right-4 flex gap-2">
-          {university.hasTour && (
+          {university.hasTour && university.tourUrl && (
             <Badge
               variant="secondary"
               className="bg-white/90 text-black hover:bg-white shadow-lg"
