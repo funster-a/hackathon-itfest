@@ -180,7 +180,15 @@ const ComparePage = () => {
                 <TableCell></TableCell>
                 {compareList.map((university) => (
                   <TableCell key={university.id} className="pl-6">
-                    {university.international?.hasExchangeProgram ? (
+                    {university.international?.exchangePrograms && university.international.exchangePrograms.length > 0 ? (
+                      <div className="max-h-32 overflow-y-auto">
+                        <ul className="list-disc list-inside space-y-1 text-sm">
+                          {university.international.exchangePrograms.map((program, idx) => (
+                            <li key={idx} className="text-muted-foreground">{program}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : university.international?.hasExchangeProgram ? (
                       <Check className="w-5 h-5 text-green-600" />
                     ) : (
                       <X className="w-5 h-5 text-red-600" />
@@ -194,7 +202,15 @@ const ComparePage = () => {
                 <TableCell></TableCell>
                 {compareList.map((university) => (
                   <TableCell key={university.id} className="pl-6">
-                    {university.international?.hasDoubleDegree ? (
+                    {university.international?.doubleDegreePrograms && university.international.doubleDegreePrograms.length > 0 ? (
+                      <div className="max-h-32 overflow-y-auto">
+                        <ul className="list-disc list-inside space-y-1 text-sm">
+                          {university.international.doubleDegreePrograms.map((program, idx) => (
+                            <li key={idx} className="text-muted-foreground">{program}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : university.international?.hasDoubleDegree ? (
                       <Check className="w-5 h-5 text-green-600" />
                     ) : (
                       <X className="w-5 h-5 text-red-600" />
@@ -208,7 +224,9 @@ const ComparePage = () => {
                 <TableCell></TableCell>
                 {compareList.map((university) => (
                   <TableCell key={university.id} className="pl-6">
-                    {university.international?.requiresIELTS ? (
+                    {university.international?.minIELTS !== undefined && university.international.minIELTS !== null ? (
+                      <span className="text-sm font-medium">{university.international.minIELTS}</span>
+                    ) : university.international?.requiresIELTS ? (
                       <Check className="w-5 h-5 text-green-600" />
                     ) : (
                       <X className="w-5 h-5 text-red-600" />
