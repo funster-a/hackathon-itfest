@@ -1,12 +1,20 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useTheme } from './ThemeProvider';
+import { useLocale } from './LocaleProvider';
 
 const Header = () => {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
+  const { locale, setLocale, t } = useLocale();
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -44,9 +52,9 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center">
-            <h1 className="text-xl font-bold text-foreground">Каталог Университетов</h1>
+            <h1 className="text-xl font-bold text-foreground">{t('header.title')}</h1>
           </Link>
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-4">
             <Link
               to="/"
               className={`text-sm font-medium transition-colors ${
@@ -55,7 +63,7 @@ const Header = () => {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Каталог
+              {t('header.catalog')}
             </Link>
             <Link
               to="/compare"
@@ -65,8 +73,39 @@ const Header = () => {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Сравнение
+              {t('header.compare')}
             </Link>
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Languages className="h-5 w-5" />
+                  <span className="sr-only">Переключить язык</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="z-[100]">
+                <DropdownMenuItem 
+                  onClick={() => setLocale('ru')}
+                  className={locale === 'ru' ? 'bg-accent' : ''}
+                >
+                  <span className="flex-1">Русский</span>
+                  {locale === 'ru' && <span className="ml-2">✓</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setLocale('kk')}
+                  className={locale === 'kk' ? 'bg-accent' : ''}
+                >
+                  <span className="flex-1">Қазақша</span>
+                  {locale === 'kk' && <span className="ml-2">✓</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setLocale('en')}
+                  className={locale === 'en' ? 'bg-accent' : ''}
+                >
+                  <span className="flex-1">English</span>
+                  {locale === 'en' && <span className="ml-2">✓</span>}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="icon"
