@@ -20,6 +20,7 @@ class UniversityRequest(BaseModel):
     IELTS_sertificate: bool = Field(default=False)
     format: str
     price: int
+    
 
 class ProgramRequest(BaseModel):
     university_id: int
