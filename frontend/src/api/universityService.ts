@@ -37,10 +37,14 @@ const adaptUniversity = (backendUni: IBackendUniversity, programs: IBackendProgr
       duration: p.duration || undefined,
       language: p.language || undefined,
       tuitionFee: p.price || undefined,
-      minEntScore: p.min_ent_score ?? null,
-      hasInternship: p.internship,
-      hasDoubleDegree: p.double_degree_program,
-      employmentRate: p.employment ?? null,
+      // 0 означает отсутствие данных для числовых полей
+      minEntScore: (p.min_ent_score != null && p.min_ent_score > 0) ? p.min_ent_score : null,
+      // Для boolean полей: в SQLite хранится как 0/1, null означает отсутствие данных
+      // Если значение 1, то true; если 0 или null, то undefined (отсутствие данных)
+      // Это позволяет показывать "-" вместо крестика, если данных нет
+      hasInternship: p.internship === 1 ? true : undefined,
+      hasDoubleDegree: p.double_degree_program === 1 ? true : undefined,
+      employmentRate: (p.employment != null && p.employment > 0) ? p.employment : null,
     }));
 
   // Парсим JSON поля для international
