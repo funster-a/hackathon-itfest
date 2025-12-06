@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, Star, Check, X, Play, ExternalLink, Heart, Scale, Calendar, GraduationCap, Globe, BarChart3, Loader2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Star, Check, X, Play, ExternalLink, Heart, Scale, Calendar, GraduationCap, Globe, BarChart3, Loader2, MessageSquare } from 'lucide-react';
 import { useCompareStore } from '../store/useCompareStore';
 import { useFavoritesStore } from '../store/useFavoritesStore';
 import { useLocale } from '@/components/LocaleProvider';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,15 @@ import {
 import { getUniversityById, analyzeChance, type IChanceAnalysisResponse } from '../api/universityService';
 import type { IUniversity } from '../types';
 import { universities as mockUniversities } from '../data/mockData';
+
+// Интерфейс для отзыва
+interface IReview {
+  id: string;
+  user: string;
+  rating: number;
+  text: string;
+  date: string;
+}
 
 // Профильные предметы для выбора
 const PROFILE_SUBJECTS = [
@@ -35,6 +45,38 @@ const PROFILE_SUBJECTS = [
   'Общ-чел',
 ];
 
+// Фейковые отзывы для демонстрации
+const getMockReviews = (): IReview[] => [
+  {
+    id: '1',
+    user: 'Айжан',
+    rating: 5,
+    text: 'Отличный кампус! Преподаватели очень квалифицированные, современное оборудование. Рекомендую!',
+    date: '2024-01-15',
+  },
+  {
+    id: '2',
+    user: 'Данияр',
+    rating: 4,
+    text: 'Хороший университет, но общежитие могло бы быть лучше. Программы обучения на высоком уровне.',
+    date: '2024-02-20',
+  },
+  {
+    id: '3',
+    user: 'Амина',
+    rating: 5,
+    text: 'Очень довольна выбором! Много возможностей для развития, активная студенческая жизнь.',
+    date: '2024-03-10',
+  },
+  {
+    id: '4',
+    user: 'Ерлан',
+    rating: 4,
+    text: 'Качественное образование, но цены немного высокие. Преподаватели отзывчивые и помогают студентам.',
+    date: '2024-03-25',
+  },
+];
+
 const UniversityDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const [university, setUniversity] = useState<IUniversity | null>(null);
@@ -43,6 +85,12 @@ const UniversityDetailsPage = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [chanceAnalysis, setChanceAnalysis] = useState<IChanceAnalysisResponse | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [reviews, setReviews] = useState<IReview[]>(getMockReviews());
+  const [reviewForm, setReviewForm] = useState({
+    userName: '',
+    rating: 0,
+    text: '',
+  });
 
   useEffect(() => {
     const loadUniversity = async () => {
@@ -183,12 +231,13 @@ const UniversityDetailsPage = () => {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">{t('details.tabs.overview')}</TabsTrigger>
           <TabsTrigger value="programs">{t('details.tabs.programs')}</TabsTrigger>
           <TabsTrigger value="admissions">{t('details.tabs.admissions')}</TabsTrigger>
           <TabsTrigger value="international">{t('details.tabs.international')}</TabsTrigger>
           <TabsTrigger value="details">{t('details.tabs.details')}</TabsTrigger>
+          <TabsTrigger value="reviews">Отзывы</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
@@ -618,6 +667,153 @@ const UniversityDetailsPage = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="reviews" className="mt-6">
+          <div className="space-y-6">
+            {/* Форма добавления отзыва */}
+            <Card>
+              <CardHeader>
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                  Оставить отзыв
+                </h2>
+              </CardHeader>
+              <CardContent>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!reviewForm.userName || !reviewForm.text || reviewForm.rating === 0) {
+                      toast({
+                        title: 'Ошибка',
+                        description: 'Пожалуйста, заполните все поля и выберите оценку',
+                        variant: 'destructive',
+                      });
+                      return;
+                    }
+
+                    const newReview: IReview = {
+                      id: Date.now().toString(),
+                      user: reviewForm.userName,
+                      rating: reviewForm.rating,
+                      text: reviewForm.text,
+                      date: new Date().toISOString().split('T')[0],
+                    };
+
+                    setReviews([newReview, ...reviews]);
+                    setReviewForm({ userName: '', rating: 0, text: '' });
+                    toast({
+                      title: 'Отзыв опубликован',
+                      description: 'Спасибо за ваш отзыв!',
+                    });
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-2">
+                    <Label htmlFor="userName">Ваше имя *</Label>
+                    <Input
+                      id="userName"
+                      value={reviewForm.userName}
+                      onChange={(e) => setReviewForm({ ...reviewForm, userName: e.target.value })}
+                      placeholder="Введите ваше имя"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Оценка *</Label>
+                    <div className="flex items-center gap-2">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setReviewForm({ ...reviewForm, rating })}
+                          className="focus:outline-none"
+                        >
+                          <Star
+                            className={`w-6 h-6 transition-colors ${
+                              reviewForm.rating >= rating
+                                ? 'text-yellow-500 fill-yellow-500'
+                                : 'text-gray-300 fill-gray-300'
+                            } hover:text-yellow-400 hover:fill-yellow-400`}
+                          />
+                        </button>
+                      ))}
+                      {reviewForm.rating > 0 && (
+                        <span className="text-sm text-muted-foreground ml-2">
+                          {reviewForm.rating} из 5
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reviewText">Текст отзыва *</Label>
+                    <Textarea
+                      id="reviewText"
+                      value={reviewForm.text}
+                      onChange={(e) => setReviewForm({ ...reviewForm, text: e.target.value })}
+                      placeholder="Поделитесь своими впечатлениями об университете..."
+                      rows={4}
+                      required
+                    />
+                  </div>
+                  <Button type="submit">Опубликовать отзыв</Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Список отзывов */}
+            <Card>
+              <CardHeader>
+                <h2 className="text-xl font-semibold">
+                  Отзывы студентов ({reviews.length})
+                </h2>
+              </CardHeader>
+              <CardContent>
+                {reviews.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    Пока нет отзывов. Будьте первым!
+                  </p>
+                ) : (
+                  <div className="space-y-6">
+                    {reviews.map((review) => (
+                      <div key={review.id} className="border-b border-border pb-6 last:border-0 last:pb-0">
+                        <div className="flex items-start gap-4">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                            {review.user.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-semibold">{review.user}</h4>
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((rating) => (
+                                  <Star
+                                    key={rating}
+                                    className={`w-4 h-4 ${
+                                      rating <= review.rating
+                                        ? 'text-yellow-500 fill-yellow-500'
+                                        : 'text-gray-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-sm text-muted-foreground ml-auto">
+                                {new Date(review.date).toLocaleDateString('ru-RU', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                })}
+                              </span>
+                            </div>
+                            <p className="text-muted-foreground leading-relaxed">{review.text}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 
