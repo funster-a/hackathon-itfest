@@ -4,19 +4,21 @@
 
 ```bash
 cd backend
-python -m venv venv
 
+# Активируйте виртуальное окружение
 # Windows
 venv\Scripts\activate
 
 # Mac/Linux
 source venv/bin/activate
 
+# Установите зависимости (если нужно)
 pip install -r requirements.txt
 
-# Создайте .env файл с API ключом Groq
+# Создайте .env файл с API ключом Groq (опционально)
 # API_KEY=your_groq_api_key_here
 
+# Запустите сервер
 uvicorn main:app --reload
 ```
 

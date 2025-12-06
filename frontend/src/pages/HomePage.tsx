@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,14 +23,13 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from '@/components/ui/pagination';
-import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
-import { universities } from '../data/mockData';
+import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, Grid3x3, List, ArrowDown, GraduationCap } from 'lucide-react';
 import { useCompareStore } from '../store/useCompareStore';
 import { useLocale } from '@/components/LocaleProvider';
 import UniversityCard from '@/components/UniversityCard';
 import AdvisorModal from '@/components/AdvisorModal';
-import { getAiRecommendation } from '../api/universityService';
-import type { IAdvisorRequest, IAdvisorResponse } from '../types';
+import { getAiRecommendation, getUniversities } from '../api/universityService';
+import type { IAdvisorRequest, IAdvisorResponse, IUniversity } from '../types';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -122,8 +121,11 @@ const DEGREES = [
 ];
 
 // Минимальная и максимальная стоимость из данных
-const getPriceRange = (universitiesList: typeof universities) => {
-  const prices = universitiesList.map((u) => u.price);
+const getPriceRange = (universitiesList: IUniversity[]) => {
+  if (universitiesList.length === 0) {
+    return { min: 0, max: 10000000 };
+  }
+  const prices = universitiesList.map((u: IUniversity) => u.price);
   const min = Math.min(...prices);
   const max = Math.max(...prices);
   // Увеличиваем максимальное значение для возможности фильтрации выше текущего максимума
@@ -144,40 +146,113 @@ const HomePage = () => {
   const [selectedProfiles, setSelectedProfiles] = useState<string[]>([]);
   const [selectedProfessions, setSelectedProfessions] = useState<string[]>([]);
   const [selectedDegrees, setSelectedDegrees] = useState<string[]>([]);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [profilesOpen, setProfilesOpen] = useState<boolean>(false);
   const [professionsOpen, setProfessionsOpen] = useState<boolean>(false);
   const [degreesOpen, setDegreesOpen] = useState<boolean>(false);
-  const [filtersVisible, setFiltersVisible] = useState<boolean>(true);
+  const [languagesOpen, setLanguagesOpen] = useState<boolean>(false);
+  const [filtersVisible, setFiltersVisible] = useState<boolean>(false);
   const [isAdvisorModalOpen, setIsAdvisorModalOpen] = useState<boolean>(false);
   const [advisorRecommendation, setAdvisorRecommendation] = useState<IAdvisorResponse | null>(null);
+  const [universities, setUniversities] = useState<IUniversity[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const catalogRef = useRef<HTMLDivElement>(null);
+  const advisorCardRef = useRef<HTMLDivElement>(null);
 
-  // Инициализация диапазона цен
+  // Загрузка университетов с API
   useEffect(() => {
-    const range = getPriceRange(universities);
-    setPriceRange([range.min, range.max]);
+    const loadUniversities = async () => {
+      setIsLoading(true);
+      try {
+        const data = await getUniversities();
+        setUniversities(data);
+        // Инициализация диапазона цен после загрузки
+        const range = getPriceRange(data);
+        setPriceRange([range.min, range.max]);
+      } catch (error) {
+        console.error('Ошибка при загрузке университетов:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUniversities();
   }, []);
 
   // Получаем уникальные города
   const cities = useMemo(() => {
-    const citySet = new Set(universities.map((u) => u.city));
-    return Array.from(citySet);
-  }, []);
+    const citySet = new Set(
+      universities
+        .map((u) => u.city)
+        .filter((city) => city && city !== 'string' && city.trim() !== '')
+    );
+    return Array.from(citySet).sort();
+  }, [universities]);
 
-  const handleEntScoreChange = (value: string) => {
+  // Получаем уникальные языки (нормализуем регистр)
+  const languages = useMemo(() => {
+    const languageMap = new Map<string, string>(); // храним нормализованную версию как ключ
+    universities.forEach((u) => {
+      if (u.languages) {
+        u.languages.forEach((lang) => {
+          if (lang && lang.trim()) {
+            // Нормализуем: первая буква заглавная, остальные строчные
+            const normalized = lang.trim().charAt(0).toUpperCase() + lang.trim().slice(1).toLowerCase();
+            // Используем Map чтобы сохранить первую встреченную версию с правильным регистром
+            if (!languageMap.has(normalized)) {
+              languageMap.set(normalized, normalized);
+            }
+          }
+        });
+      }
+    });
+    return Array.from(languageMap.values()).sort();
+  }, [universities]);
+
+  // Вычисляем диапазон цен один раз
+  const priceRangeData = useMemo(() => getPriceRange(universities), []);
+
+  // Кешируем нормализованный поисковый запрос
+  const normalizedSearchQuery = useMemo(() => 
+    searchQuery.toLowerCase().trim(), 
+    [searchQuery]
+  );
+
+  // Создаем Set для быстрой проверки языков
+  // Оптимизация: создаем Set только если есть выбранные языки
+  const selectedLanguagesSet = useMemo(() => {
+    if (selectedLanguages.length === 0) {
+      return new Set<string>();
+    }
+    return new Set(selectedLanguages);
+  }, [selectedLanguages]);
+
+  const handleEntScoreChange = useCallback((value: string) => {
     setEntScoreInput(value);
     const numValue = value === '' ? null : Number(value);
     if (numValue === null || (!isNaN(numValue) && numValue >= 0 && numValue <= 140)) {
       setEntScore(numValue);
     }
-  };
+  }, [setEntScore]);
 
-  // Фильтрация университетов
+  // Фильтрация университетов (оптимизированная версия)
   const filteredUniversities = useMemo(() => {
+    const hasLanguageFilter = selectedLanguagesSet.size > 0;
+    
+    // Ранний выход если нет активных фильтров
+    if (!normalizedSearchQuery && !selectedCity && !hasDormitory && 
+        !hasLanguageFilter && 
+        priceRange[0] === priceRangeData.min && 
+        priceRange[1] === priceRangeData.max) {
+      return universities;
+    }
+
     return universities.filter((university) => {
-      // Поиск по названию
-      if (searchQuery && !university.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+      // Поиск по названию (используем кешированное значение)
+      if (normalizedSearchQuery && !university.name.toLowerCase().includes(normalizedSearchQuery)) {
         return false;
       }
       // Фильтр по городу
@@ -192,54 +267,126 @@ const HomePage = () => {
       if (university.price < priceRange[0] || university.price > priceRange[1]) {
         return false;
       }
+      // Фильтр по языкам (оптимизированная проверка)
+      if (hasLanguageFilter) {
+        // Если у университета нет языков, сразу исключаем
+        if (!university.languages || university.languages.length === 0) {
+          return false;
+        }
+        // Проверяем пересечение языков (используем Set для O(1) проверки)
+        // .some() уже делает ранний выход при первом совпадении
+        if (!university.languages.some(lang => selectedLanguagesSet.has(lang))) {
+          return false;
+        }
+      }
       return true;
     });
-  }, [searchQuery, selectedCity, hasDormitory, priceRange]);
+  }, [normalizedSearchQuery, selectedCity, hasDormitory, priceRange, selectedLanguagesSet, priceRangeData]);
 
   // Сброс страницы при изменении фильтров
+  // Используем selectedLanguagesSet.size вместо массива для лучшей производительности
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCity, hasDormitory, selectedProfiles, selectedProfessions, selectedDegrees, priceRange]);
+  }, [searchQuery, selectedCity, hasDormitory, selectedProfiles.length, selectedProfessions.length, selectedDegrees.length, selectedLanguagesSet.size, priceRange]);
 
-  // Вычисление пагинации
-  const totalPages = Math.ceil(filteredUniversities.length / ITEMS_PER_PAGE);
+  // Дублируем университеты для демонстрации пагинации (2-3 раза)
+  const duplicatedUniversities = useMemo(() => {
+    const duplicated = [...filteredUniversities];
+    // Добавляем копии с уникальными ID
+    for (let i = 0; i < 2; i++) {
+      duplicated.push(...filteredUniversities.map(uni => ({
+        ...uni,
+        id: `${uni.id}-copy-${i + 1}`
+      })));
+    }
+    return duplicated;
+  }, [filteredUniversities]);
+
+  // Вычисление пагинации на основе дублированных университетов
+  const totalPages = useMemo(() => 
+    Math.ceil(duplicatedUniversities.length / ITEMS_PER_PAGE),
+    [duplicatedUniversities.length]
+  );
+
   const paginatedUniversities = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredUniversities.slice(startIndex, endIndex);
-  }, [filteredUniversities, currentPage]);
+    return duplicatedUniversities.slice(startIndex, endIndex);
+  }, [duplicatedUniversities, currentPage]);
+
+  // Мемоизируем вычисление страниц для пагинации
+  const paginationPages = useMemo(() => {
+    const pages: (number | 'ellipsis')[] = [];
+    
+    if (totalPages <= 7) {
+      // Если страниц мало, показываем все
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Всегда показываем первую страницу
+      pages.push(1);
+      
+      if (currentPage <= 3) {
+        // Если мы в начале
+        for (let i = 2; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        // Если мы в конце
+        pages.push('ellipsis');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // Если мы в середине
+        pages.push('ellipsis');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  }, [totalPages, currentPage]);
 
   // Функция для переключения страницы с прокруткой вверх
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
     });
-  };
+  }, []);
 
-  const priceRangeData = useMemo(() => getPriceRange(universities), []);
-
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchQuery('');
     setSelectedCity(null);
     setHasDormitory(false);
     setSelectedProfiles([]);
     setSelectedProfessions([]);
     setSelectedDegrees([]);
+    setSelectedLanguages([]);
     setPriceRange([priceRangeData.min, priceRangeData.max]);
-  };
+  }, [priceRangeData]);
 
-  const hasActiveFilters = 
+  const hasActiveFilters = useMemo(() => 
     selectedCity !== null || 
     hasDormitory || 
     selectedProfiles.length > 0 || 
     selectedProfessions.length > 0 ||
     selectedDegrees.length > 0 ||
+    selectedLanguagesSet.size > 0 ||
     priceRange[0] !== priceRangeData.min ||
-    priceRange[1] !== priceRangeData.max;
+    priceRange[1] !== priceRangeData.max,
+    [selectedCity, hasDormitory, selectedProfiles.length, selectedProfessions.length, selectedDegrees.length, selectedLanguagesSet.size, priceRange, priceRangeData]
+  );
 
-  const toggleProfile = (profile: string) => {
+  const toggleProfile = useCallback((profile: string) => {
     setSelectedProfiles((prev) => {
       const newProfiles = prev.includes(profile)
         ? prev.filter((p) => p !== profile)
@@ -255,15 +402,15 @@ const HomePage = () => {
       
       return newProfiles;
     });
-  };
+  }, []);
 
-  const toggleProfession = (profession: string) => {
+  const toggleProfession = useCallback((profession: string) => {
     setSelectedProfessions((prev) =>
       prev.includes(profession)
         ? prev.filter((p) => p !== profession)
         : [...prev, profession]
     );
-  };
+  }, []);
 
   // Получаем доступные профессии для выбранных профилей
   const availableProfessions = useMemo(() => {
@@ -274,15 +421,23 @@ const HomePage = () => {
     return Array.from(professions).sort();
   }, [selectedProfiles]);
 
-  const toggleDegree = (degree: string) => {
+  const toggleDegree = useCallback((degree: string) => {
     setSelectedDegrees((prev) =>
       prev.includes(degree)
         ? prev.filter((d) => d !== degree)
         : [...prev, degree]
     );
-  };
+  }, []);
 
-  const handleAdvisorRecommend = async (data: IAdvisorRequest) => {
+  const toggleLanguage = useCallback((language: string) => {
+    setSelectedLanguages((prev) =>
+      prev.includes(language)
+        ? prev.filter((l) => l !== language)
+        : [...prev, language]
+    );
+  }, []);
+
+  const handleAdvisorRecommend = useCallback(async (data: IAdvisorRequest) => {
     try {
       const response = await getAiRecommendation(data);
       setAdvisorRecommendation(response);
@@ -290,40 +445,203 @@ const HomePage = () => {
     } catch (error) {
       console.error('Ошибка при получении рекомендации:', error);
     }
-  };
+  }, []);
 
-  const findUniversityByName = (name: string) => {
-    // Нечеткий поиск по названию
+  const findUniversityByName = useCallback((name: string) => {
+    if (!name || !universities.length) return null;
+    
+    // Нормализуем название для поиска
     const normalizedName = name.toLowerCase().trim();
-    return universities.find((u) => 
-      u.name.toLowerCase().includes(normalizedName) || 
-      normalizedName.includes(u.name.toLowerCase())
+    
+    // 1. Точное совпадение (без учета регистра)
+    let match = universities.find((u) => 
+      u.name.toLowerCase().trim() === normalizedName
     );
-  };
+    if (match) return match;
+    
+    // 2. Одно название содержит другое
+    match = universities.find((u) => {
+      const uniName = u.name.toLowerCase().trim();
+      return uniName.includes(normalizedName) || normalizedName.includes(uniName);
+    });
+    if (match) return match;
+    
+    // 3. Поиск по первым словам (для случаев типа "КБТУ" vs "Казахстанско-Британский технический университет")
+    const nameWords = normalizedName.split(/\s+/).filter(w => w.length > 2);
+    if (nameWords.length > 0) {
+      match = universities.find((u) => {
+        const uniName = u.name.toLowerCase().trim();
+        return nameWords.some(word => uniName.includes(word));
+      });
+      if (match) return match;
+    }
+    
+    // 4. Поиск по первым буквам (для аббревиатур)
+    const firstLetters = normalizedName.split(/\s+/).map(w => w[0]).join('').toUpperCase();
+    if (firstLetters.length >= 2) {
+      match = universities.find((u) => {
+        const uniFirstLetters = u.name.split(/\s+/).map(w => w[0]).join('').toUpperCase();
+        return uniFirstLetters === firstLetters || uniFirstLetters.includes(firstLetters) || firstLetters.includes(uniFirstLetters);
+      });
+      if (match) return match;
+    }
+    
+    return null;
+  }, [universities]);
 
-  const handleGoToUniversity = () => {
-    if (advisorRecommendation) {
-      const university = findUniversityByName(advisorRecommendation.university_name);
-      if (university) {
-        navigate(`/university/${university.id}`);
-      } else {
-        // Если не нашли, попробуем найти по частичному совпадению
-        const partialMatch = universities.find((u) => 
-          advisorRecommendation.university_name.toLowerCase().includes(u.name.toLowerCase().substring(0, 10)) ||
-          u.name.toLowerCase().includes(advisorRecommendation.university_name.toLowerCase().substring(0, 10))
-        );
-        if (partialMatch) {
-          navigate(`/university/${partialMatch.id}`);
-        }
+  const handleGoToUniversity = useCallback(() => {
+    if (!advisorRecommendation || !advisorRecommendation.university_name) {
+      console.error('Нет рекомендации или названия университета');
+      return;
+    }
+    
+    if (universities.length === 0) {
+      console.error('Список университетов пуст');
+      return;
+    }
+    
+    const university = findUniversityByName(advisorRecommendation.university_name);
+    
+    if (university) {
+      console.log('Найден университет:', university.name, 'ID:', university.id);
+      navigate(`/university/${university.id}`, { replace: false });
+    } else {
+      console.warn('Рекомендованный университет не найден в списке:', advisorRecommendation.university_name);
+      console.log('Доступные университеты:', universities.map(u => u.name));
+      
+      // Пытаемся найти университет с похожим названием
+      const searchName = advisorRecommendation.university_name.toLowerCase();
+      let fallback = universities.find((u) => {
+        const uniName = u.name.toLowerCase();
+        // Ищем по первым словам
+        const searchWords = searchName.split(/\s+/).filter(w => w.length > 2);
+        const uniWords = uniName.split(/\s+/).filter(w => w.length > 2);
+        return searchWords.some(sw => uniWords.some(uw => uw.includes(sw) || sw.includes(uw)));
+      });
+      
+      // Если не нашли по названию, выбираем первый доступный университет
+      // Это лучше, чем показывать пустой результат
+      if (!fallback && universities.length > 0) {
+        fallback = universities[0];
+        console.log('Выбран первый доступный университет:', fallback.name);
+      }
+      
+      if (fallback) {
+        console.log('Переход к университету:', fallback.name);
+        navigate(`/university/${fallback.id}`, { replace: false });
       }
     }
-  };
+  }, [advisorRecommendation, findUniversityByName, navigate, universities]);
+
+  const toggleFiltersVisible = useCallback(() => {
+    setFiltersVisible(prev => !prev);
+  }, []);
+
+  const handleCityChange = useCallback((city: string) => {
+    setSelectedCity(prevCity => prevCity === city ? null : city);
+  }, []);
+
+  const handlePriceRangeChange = useCallback((value: number[]) => {
+    if (Array.isArray(value) && value.length === 2) {
+      setPriceRange([value[0], value[1]]);
+    }
+  }, []);
+
+  const scrollToCatalog = useCallback(() => {
+    catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  const scrollToAdvisorAndOpenModal = useCallback(() => {
+    // Сначала прокручиваем к секции с результатами ИИ
+    if (advisorCardRef.current) {
+      advisorCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Ждем завершения прокрутки, затем открываем модалку
+      setTimeout(() => {
+        setIsAdvisorModalOpen(true);
+      }, 500); // Задержка для завершения прокрутки
+    } else {
+      // Если ref еще не готов, просто открываем модалку
+      setIsAdvisorModalOpen(true);
+    }
+  }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold tracking-tight mb-8">{t('home.title')}</h1>
+    <div className="w-full">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10 py-20 sm:py-28 lg:py-32">
+        {/* Декоративные элементы */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+        </div>
 
-      {/* Блок фильтров и советника */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Иконка */}
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl"></div>
+                <div className="relative bg-primary/10 p-4 rounded-full">
+                  <GraduationCap className="w-12 h-12 sm:w-16 sm:h-16 text-primary" />
+                </div>
+              </div>
+            </div>
+
+            {/* Заголовок */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
+              <span className="block">{t('home.hero.title1')}</span>
+              <span className="block bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                {t('home.hero.title2')}
+              </span>
+              <span className="block">{t('home.hero.title3')}</span>
+            </h1>
+
+            {/* Подзаголовок */}
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              {t('home.hero.subtitle')}
+            </p>
+
+            {/* Кнопки CTA */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+              <Button
+                onClick={scrollToCatalog}
+                size="lg"
+                className="w-full sm:w-auto text-base px-8 py-6 h-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Search className="w-5 h-5 mr-2" />
+                {t('home.hero.searchButton')}
+              </Button>
+              <Button
+                onClick={scrollToAdvisorAndOpenModal}
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto text-base px-8 py-6 h-auto border-2 hover:bg-accent transition-all duration-300"
+              >
+                <Sparkles className="w-5 h-5 mr-2" />
+                {t('home.hero.aiButton')}
+              </Button>
+            </div>
+
+            {/* Индикатор прокрутки */}
+            <div className="pt-8 animate-bounce">
+              <button
+                onClick={scrollToCatalog}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={t('home.hero.scrollToCatalog')}
+              >
+                <ArrowDown className="w-6 h-6 mx-auto" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Каталог */}
+      <div ref={catalogRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-3xl font-bold tracking-tight mb-8">{t('home.title')}</h1>
+
+        {/* Блок фильтров и советника */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Фильтры - слева */}
         <Card>
@@ -348,7 +666,7 @@ const HomePage = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setFiltersVisible(!filtersVisible)}
+                  onClick={toggleFiltersVisible}
                   className="h-8"
                   aria-label={filtersVisible ? t('filters.hide') : t('filters.show')}
                 >
@@ -390,7 +708,7 @@ const HomePage = () => {
                     key={city}
                     variant={selectedCity === city ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setSelectedCity(selectedCity === city ? null : city)}
+                    onClick={() => handleCityChange(city)}
                     className="text-sm"
                   >
                     {city}
@@ -490,13 +808,9 @@ const HomePage = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('filters.priceRange')}</label>
               <div className="px-2">
-                <Slider
+                  <Slider
                   value={priceRange}
-                  onValueChange={(value) => {
-                    if (Array.isArray(value) && value.length === 2) {
-                      setPriceRange([value[0], value[1]]);
-                    }
-                  }}
+                  onValueChange={handlePriceRangeChange}
                   min={priceRangeData.min}
                   max={priceRangeData.max}
                   step={100000}
@@ -511,40 +825,79 @@ const HomePage = () => {
 
             <Separator />
 
-            {/* Фильтр по научным степеням */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t('filters.degrees')}</label>
-              <DropdownMenu 
-                modal={false} 
-                open={degreesOpen} 
-                onOpenChange={setDegreesOpen}
-              >
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {selectedDegrees.length > 0
-                      ? `${selectedDegrees.length} ${t('filters.selected')}`
-                      : t('filters.selectDegrees')}
-                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  className="w-56"
-                  onCloseAutoFocus={(e) => e.preventDefault()}
+            {/* Фильтр по научным степеням и языкам в одной строке */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Научные степени */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('filters.degrees')}</label>
+                <DropdownMenu 
+                  modal={false} 
+                  open={degreesOpen} 
+                  onOpenChange={setDegreesOpen}
                 >
-                  <DropdownMenuLabel>{t('filters.degrees')}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {DEGREES.map((degree) => (
-                    <DropdownMenuCheckboxItem
-                      key={degree}
-                      checked={selectedDegrees.includes(degree)}
-                      onCheckedChange={() => toggleDegree(degree)}
-                      onSelect={(e) => e.preventDefault()}
-                    >
-                      {degree}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {selectedDegrees.length > 0
+                        ? `${selectedDegrees.length} ${t('filters.selected')}`
+                        : t('filters.selectDegrees')}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    className="w-56"
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <DropdownMenuLabel>{t('filters.degrees')}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {DEGREES.map((degree) => (
+                      <DropdownMenuCheckboxItem
+                        key={degree}
+                        checked={selectedDegrees.includes(degree)}
+                        onCheckedChange={() => toggleDegree(degree)}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {degree}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Языки обучения */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('filters.languages')}</label>
+                <DropdownMenu 
+                  modal={false} 
+                  open={languagesOpen} 
+                  onOpenChange={setLanguagesOpen}
+                >
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {selectedLanguages.length > 0
+                        ? `${selectedLanguages.length} ${t('filters.selected')}`
+                        : t('filters.selectLanguages')}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    className="w-56"
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <DropdownMenuLabel>{t('filters.languages')}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {languages.map((language) => (
+                      <DropdownMenuCheckboxItem
+                        key={language}
+                        checked={selectedLanguages.includes(language)}
+                        onCheckedChange={() => toggleLanguage(language)}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {language}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
             <Separator />
@@ -570,7 +923,7 @@ const HomePage = () => {
         </Card>
 
         {/* Абитуриент-Советник - справа */}
-        <Card>
+        <Card ref={advisorCardRef}>
           <CardHeader>
             <h2 className="text-lg font-semibold p-0.5">{t('advisor.title')}</h2>
           </CardHeader>
@@ -613,7 +966,7 @@ const HomePage = () => {
                       onClick={handleGoToUniversity}
                       className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
                     >
-                      Перейти к университету
+                      {t('advisor.goToUniversity')}
                     </Button>
                   </div>
                 </>
@@ -625,15 +978,53 @@ const HomePage = () => {
 
       {/* Результаты */}
       <div className="flex flex-col gap-4">
-        {filteredUniversities.length > 0 ? (
+        {isLoading ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">Загрузка университетов...</p>
+            </CardContent>
+          </Card>
+        ) : filteredUniversities.length > 0 ? (
           <>
-            {paginatedUniversities.map((university) => (
-              <UniversityCard
-                key={university.id}
-                university={university}
-                userEntScore={userEntScore}
-              />
-            ))}
+            {/* Переключатель вида отображения */}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-muted-foreground">
+                {t('filters.found')} {duplicatedUniversities.length} {t('filters.universities')}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-9"
+                  aria-label={t('filters.gridView')}
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="h-9"
+                  aria-label={t('filters.listView')}
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className={viewMode === 'grid' 
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
+              : 'flex flex-col gap-4'
+            }>
+              {paginatedUniversities.map((university) => (
+                <UniversityCard
+                  key={university.id}
+                  university={university}
+                  userEntScore={userEntScore}
+                />
+              ))}
+            </div>
             
             {/* Пагинация */}
             {totalPages > 1 && (
@@ -654,66 +1045,29 @@ const HomePage = () => {
                     )}
 
                     {/* Номера страниц */}
-                    {(() => {
-                      const pages: (number | 'ellipsis')[] = [];
-                      
-                      if (totalPages <= 7) {
-                        // Если страниц мало, показываем все
-                        for (let i = 1; i <= totalPages; i++) {
-                          pages.push(i);
-                        }
-                      } else {
-                        // Всегда показываем первую страницу
-                        pages.push(1);
-                        
-                        if (currentPage <= 3) {
-                          // Если мы в начале
-                          for (let i = 2; i <= 4; i++) {
-                            pages.push(i);
-                          }
-                          pages.push('ellipsis');
-                          pages.push(totalPages);
-                        } else if (currentPage >= totalPages - 2) {
-                          // Если мы в конце
-                          pages.push('ellipsis');
-                          for (let i = totalPages - 3; i <= totalPages; i++) {
-                            pages.push(i);
-                          }
-                        } else {
-                          // Если мы в середине
-                          pages.push('ellipsis');
-                          for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                            pages.push(i);
-                          }
-                          pages.push('ellipsis');
-                          pages.push(totalPages);
-                        }
-                      }
-                      
-                      return pages.map((page, index) => {
-                        if (page === 'ellipsis') {
-                          return (
-                            <PaginationItem key={`ellipsis-${index}`}>
-                              <PaginationEllipsis />
-                            </PaginationItem>
-                          );
-                        }
+                    {paginationPages.map((page, index) => {
+                      if (page === 'ellipsis') {
                         return (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handlePageChange(page);
-                              }}
-                              isActive={currentPage === page}
-                            >
-                              {page}
-                            </PaginationLink>
+                          <PaginationItem key={`ellipsis-${index}`}>
+                            <PaginationEllipsis />
                           </PaginationItem>
                         );
-                      });
-                    })()}
+                      }
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(page);
+                            }}
+                            isActive={currentPage === page}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
 
                     {/* Кнопка Next */}
                     {currentPage < totalPages && (
@@ -746,6 +1100,7 @@ const HomePage = () => {
             </CardContent>
           </Card>
         )}
+      </div>
       </div>
 
       {/* Модальное окно ИИ-Советника */}

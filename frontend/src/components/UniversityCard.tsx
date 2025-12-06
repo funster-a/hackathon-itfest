@@ -57,8 +57,8 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
   const imageUrl = university.imageUrl || `https://picsum.photos/seed/${university.id}/800/400`;
 
   return (
-    <Card className="hover:shadow-md transition-shadow overflow-hidden">
-      <div className="relative w-full h-48 bg-gradient-to-br from-slate-200 to-slate-300 overflow-hidden">
+    <Card className="hover:shadow-md transition-shadow overflow-hidden h-full flex flex-col">
+      <div className="relative w-full h-48 bg-gradient-to-br from-slate-200 to-slate-300 overflow-hidden flex-shrink-0">
         <img
           src={imageUrl}
           alt={university.name}
@@ -67,7 +67,7 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
         <div className="absolute top-4 right-4 flex gap-2">
-          {university.hasTour && (
+          {university.hasTour && university.tourUrl && (
             <Badge
               variant="secondary"
               className="bg-white/90 text-black hover:bg-white shadow-lg"
@@ -118,8 +118,8 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
           )}
         </div>
       </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground mb-4 leading-relaxed">
+      <CardContent className="flex-1 flex flex-col">
+        <p className="text-muted-foreground mb-4 leading-relaxed line-clamp-3 flex-shrink-0">
           {university.description}
         </p>
         <div className="flex flex-wrap items-center gap-4 text-sm">
@@ -136,7 +136,7 @@ const UniversityCard = ({ university, userEntScore }: UniversityCardProps) => {
           </div>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="mt-auto flex-shrink-0">
         <Button
           variant={isInCompare ? 'outline' : 'default'}
           onClick={handleAddToCompare}

@@ -69,6 +69,12 @@ const baseUniversities: IUniversity[] = [
       hasExchangeProgram: true,
       hasDoubleDegree: true,
       requiresIELTS: true,
+      minIELTS: 5.5,
+      doubleDegreePrograms: [
+        'Двойной диплом с University of California',
+        'Двойной диплом с Boston University',
+        'Двойной диплом с University of Cologne',
+      ],
     },
   },
   {
@@ -135,6 +141,8 @@ const baseUniversities: IUniversity[] = [
       hasExchangeProgram: true,
       hasDoubleDegree: false,
       requiresIELTS: false,
+      minIELTS: undefined,
+      doubleDegreePrograms: [],
     },
   },
   {
@@ -208,13 +216,18 @@ const baseUniversities: IUniversity[] = [
       hasExchangeProgram: true,
       hasDoubleDegree: true,
       requiresIELTS: true,
+      minIELTS: 6.0,
+      doubleDegreePrograms: [
+        'Двойной диплом с University of Reading (Морская академия)',
+        'Совместные программы с Китаем',
+      ],
     },
   },
   {
     id: '4',
     name: 'Nazarbayev University',
     description: 'Флагманский университет Казахстана, созданный по модели ведущих мировых университетов. Предлагает программы бакалавриата и магистратуры на английском языке с международными стандартами образования.',
-    city: 'Нур-Султан',
+    city: 'Астана',
     price: 6000000,
     minEntScore: 130,
     hasDormitory: true,
@@ -275,6 +288,8 @@ const baseUniversities: IUniversity[] = [
       hasExchangeProgram: true,
       hasDoubleDegree: false,
       requiresIELTS: true,
+      minIELTS: 6.0,
+      doubleDegreePrograms: [],
     },
   },
   {
@@ -338,6 +353,11 @@ const baseUniversities: IUniversity[] = [
       hasExchangeProgram: true,
       hasDoubleDegree: true,
       requiresIELTS: false,
+      minIELTS: undefined,
+      doubleDegreePrograms: [
+        'Двойной диплом с Сорбонной (Франция)',
+        'Двойной диплом с Софийским университетом (Болгария)',
+      ],
     },
   },
   {
