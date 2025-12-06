@@ -160,6 +160,7 @@ const HomePage = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const catalogRef = useRef<HTMLDivElement>(null);
+  const advisorCardRef = useRef<HTMLDivElement>(null);
 
   // Загрузка университетов с API
   useEffect(() => {
@@ -550,6 +551,20 @@ const HomePage = () => {
     catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
+  const scrollToAdvisorAndOpenModal = useCallback(() => {
+    // Сначала прокручиваем к секции с результатами ИИ
+    if (advisorCardRef.current) {
+      advisorCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Ждем завершения прокрутки, затем открываем модалку
+      setTimeout(() => {
+        setIsAdvisorModalOpen(true);
+      }, 500); // Задержка для завершения прокрутки
+    } else {
+      // Если ref еще не готов, просто открываем модалку
+      setIsAdvisorModalOpen(true);
+    }
+  }, []);
+
   return (
     <div className="w-full">
       {/* Hero Section */}
@@ -598,7 +613,7 @@ const HomePage = () => {
                 {t('home.hero.searchButton')}
               </Button>
               <Button
-                onClick={() => setIsAdvisorModalOpen(true)}
+                onClick={scrollToAdvisorAndOpenModal}
                 size="lg"
                 variant="outline"
                 className="w-full sm:w-auto text-base px-8 py-6 h-auto border-2 hover:bg-accent transition-all duration-300"
@@ -908,7 +923,7 @@ const HomePage = () => {
         </Card>
 
         {/* Абитуриент-Советник - справа */}
-        <Card>
+        <Card ref={advisorCardRef}>
           <CardHeader>
             <h2 className="text-lg font-semibold p-0.5">{t('advisor.title')}</h2>
           </CardHeader>
