@@ -153,7 +153,7 @@ const HomePage = () => {
   const [professionsOpen, setProfessionsOpen] = useState<boolean>(false);
   const [degreesOpen, setDegreesOpen] = useState<boolean>(false);
   const [languagesOpen, setLanguagesOpen] = useState<boolean>(false);
-  const [filtersVisible, setFiltersVisible] = useState<boolean>(true);
+  const [filtersVisible, setFiltersVisible] = useState<boolean>(false);
   const [isAdvisorModalOpen, setIsAdvisorModalOpen] = useState<boolean>(false);
   const [advisorRecommendation, setAdvisorRecommendation] = useState<IAdvisorResponse | null>(null);
   const [universities, setUniversities] = useState<IUniversity[]>([]);
