@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, Star, Check, X, Play, ExternalLink, Heart, Scale, Calendar, GraduationCap, Globe } from 'lucide-react';
+import { ArrowLeft, MapPin, Star, Check, X, Play, ExternalLink, Heart, Scale, Calendar, GraduationCap, Globe, BarChart3, Loader2 } from 'lucide-react';
 import { useCompareStore } from '../store/useCompareStore';
 import { useFavoritesStore } from '../store/useFavoritesStore';
 import { useLocale } from '@/components/LocaleProvider';
@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -16,14 +18,31 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { getUniversityById } from '../api/universityService';
+import { getUniversityById, analyzeChance, type IChanceAnalysisResponse } from '../api/universityService';
 import type { IUniversity } from '../types';
 import { universities as mockUniversities } from '../data/mockData';
+
+// Профильные предметы для выбора
+const PROFILE_SUBJECTS = [
+  'Инф-мат',
+  'Хим-био',
+  'Физ-мат',
+  'Био-хим',
+  'Гео-био',
+  'Матем-геогр',
+  'Ист-прав',
+  'Яз-лит',
+  'Общ-чел',
+];
 
 const UniversityDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const [university, setUniversity] = useState<IUniversity | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [userScore, setUserScore] = useState<string>('');
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const [chanceAnalysis, setChanceAnalysis] = useState<IChanceAnalysisResponse | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
 
   useEffect(() => {
     const loadUniversity = async () => {
@@ -71,6 +90,48 @@ const UniversityDetailsPage = () => {
   const handleAddProgramToCompare = (program: { name: string; degree: 'Bachelor' | 'Master' | 'PhD'; description?: string }) => {
     if (!university || !id) return;
     addProgramToCompare(id, university.name, program);
+  };
+
+  const handleAnalyzeChance = async () => {
+    if (!id || !userScore || !selectedSubject) {
+      toast({
+        title: 'Ошибка',
+        description: 'Пожалуйста, заполните все поля',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const score = Number(userScore);
+    if (isNaN(score) || score < 0 || score > 140) {
+      toast({
+        title: 'Ошибка',
+        description: 'Балл ЕНТ должен быть от 0 до 140',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setChanceAnalysis(null);
+
+    try {
+      const result = await analyzeChance({
+        universityId: id,
+        userScore: score,
+        subject: selectedSubject,
+      });
+      setChanceAnalysis(result);
+    } catch (error) {
+      console.error('Ошибка при анализе шансов:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось проанализировать шансы. Попробуйте еще раз.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   if (isLoading) {
@@ -309,6 +370,104 @@ const UniversityDetailsPage = () => {
         <TabsContent value="admissions" className="mt-6">
           {university.admissions ? (
             <div className="space-y-6">
+              {/* AI Chance Analyzer */}
+              <Card className="border-primary/50 bg-gradient-to-br from-primary/5 to-primary/10">
+                <CardHeader>
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-primary" />
+                    📊 Оцени свои шансы с ИИ
+                  </h2>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="userScore">Твой балл ЕНТ</Label>
+                      <Input
+                        id="userScore"
+                        type="number"
+                        min="0"
+                        max="140"
+                        value={userScore}
+                        onChange={(e) => setUserScore(e.target.value)}
+                        placeholder="Введите балл (0-140)"
+                        disabled={isAnalyzing}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="subject">Профильный предмет</Label>
+                      <select
+                        id="subject"
+                        value={selectedSubject}
+                        onChange={(e) => setSelectedSubject(e.target.value)}
+                        disabled={isAnalyzing}
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                      >
+                        <option value="">Выберите предмет</option>
+                        {PROFILE_SUBJECTS.map((subject) => (
+                          <option key={subject} value={subject}>
+                            {subject}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleAnalyzeChance}
+                    disabled={isAnalyzing || !userScore || !selectedSubject}
+                    className="w-full md:w-auto"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Анализируем...
+                      </>
+                    ) : (
+                      <>
+                        <BarChart3 className="w-4 h-4 mr-2" />
+                        Рассчитать вероятность
+                      </>
+                    )}
+                  </Button>
+
+                  {/* Результат анализа */}
+                  {chanceAnalysis && (
+                    <div className="mt-6 space-y-4">
+                      <div
+                        className={`rounded-lg p-4 border-2 ${
+                          chanceAnalysis.chance === 'High'
+                            ? 'bg-green-50 dark:bg-green-950 border-green-500 dark:border-green-800'
+                            : chanceAnalysis.chance === 'Medium'
+                            ? 'bg-yellow-50 dark:bg-yellow-950 border-yellow-500 dark:border-yellow-800'
+                            : 'bg-red-50 dark:bg-red-950 border-red-500 dark:border-red-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge
+                            variant="outline"
+                            className={
+                              chanceAnalysis.chance === 'High'
+                                ? 'bg-green-500 text-white border-green-600'
+                                : chanceAnalysis.chance === 'Medium'
+                                ? 'bg-yellow-500 text-white border-yellow-600'
+                                : 'bg-red-500 text-white border-red-600'
+                            }
+                          >
+                            {chanceAnalysis.chance === 'High'
+                              ? 'Высокий шанс'
+                              : chanceAnalysis.chance === 'Medium'
+                              ? 'Средний шанс'
+                              : 'Низкий шанс'}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-foreground leading-relaxed">
+                          {chanceAnalysis.message}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <h2 className="text-xl font-semibold">{t('details.admissions.title')}</h2>

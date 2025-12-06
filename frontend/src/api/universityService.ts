@@ -233,3 +233,54 @@ export const compareWithAi = async (data: ICompareAiRequest): Promise<ICompareAi
   }
 };
 
+export interface IChanceAnalysisRequest {
+  universityId: string;
+  userScore: number;
+  subject: string;
+}
+
+export interface IChanceAnalysisResponse {
+  chance: 'High' | 'Medium' | 'Low';
+  message: string;
+}
+
+export const analyzeChance = async (data: IChanceAnalysisRequest): Promise<IChanceAnalysisResponse> => {
+  try {
+    const response = await api.post<IChanceAnalysisResponse>('/ai/analyze-chance', data);
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при анализе шансов поступления:', error);
+    // Mock-ответ для MVP
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Получаем информацию об университете для более точного анализа
+        const university = mockUniversities.find(u => u.id === data.universityId);
+        const minScore = university?.minEntScore || 100;
+        const scoreDiff = data.userScore - minScore;
+        
+        let chance: 'High' | 'Medium' | 'Low';
+        let message: string;
+        
+        if (scoreDiff >= 20) {
+          chance = 'High';
+          message = `Ваш балл ${data.userScore} значительно превышает минимальный порог (${minScore}) на ${scoreDiff} баллов. У вас высокие шансы на поступление! Конкуренция на направление "${data.subject}" в этом году умеренная. Рекомендуем подать документы в первую волну.`;
+        } else if (scoreDiff >= 5) {
+          chance = 'Medium';
+          message = `Ваш балл ${data.userScore} выше минимального порога (${minScore}) на ${scoreDiff} баллов. У вас средние шансы на поступление. Конкуренция на направление "${data.subject}" может быть высокой. Рекомендуем подстраховаться и подать документы в несколько университетов, а также рассмотреть возможность участия в дополнительных конкурсах.`;
+        } else if (scoreDiff >= 0) {
+          chance = 'Low';
+          message = `Ваш балл ${data.userScore} близок к минимальному порогу (${minScore}). Шансы на поступление низкие, но возможны. Конкуренция на направление "${data.subject}" в этом году высокая. Рекомендуем рассмотреть альтернативные варианты или программы с более низким проходным баллом. Также стоит обратить внимание на программы с платным обучением.`;
+        } else {
+          chance = 'Low';
+          message = `Ваш балл ${data.userScore} ниже минимального порога (${minScore}) на ${Math.abs(scoreDiff)} баллов. К сожалению, шансы на поступление очень низкие. Рекомендуем рассмотреть другие университеты с более низкими требованиями или программы с платным обучением. Также можно попробовать улучшить результаты ЕНТ и подать документы в следующем году.`;
+        }
+        
+        resolve({
+          chance,
+          message,
+        });
+      }, 1500);
+    });
+  }
+};
+
