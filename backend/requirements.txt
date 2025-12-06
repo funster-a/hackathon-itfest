@@ -1,4 +1,6 @@
 fastapi==0.123.9
+groq==0.37.1
+gunicorn==23.0.0
 openai==2.9.0
 python-dotenv==1.2.1
 SQLAlchemy==2.0.44
