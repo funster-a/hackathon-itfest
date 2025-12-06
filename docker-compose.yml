@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    container_name: zerohub-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Монтируем базу данных для персистентности
+      - ./backend/zerohub.db:/app/zerohub.db
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - zerohub-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # URL бэкенда - используем localhost, так как запросы идут с клиента
+        # В production это должен быть реальный URL бэкенда
+        VITE_API_URL: http://localhost:8000/api
+    container_name: zerohub-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - zerohub-network
+
+networks:
+  zerohub-network:
+    driver: bridge
+
