@@ -24,6 +24,14 @@ const translations: Record<Locale, Record<string, string>> = {
     
     // HomePage
     'home.title': 'Каталог университетов',
+    'home.hero.title1': 'Найди университет',
+    'home.hero.title2': 'своей мечты',
+    'home.hero.title3': 'в Казахстане',
+    'home.hero.subtitle': 'Единый навигатор по вузам, грантам и общежитиям. Сравнивай, выбирай и поступай уверенно.',
+    'home.hero.searchButton': 'Начать поиск',
+    'home.hero.aiButton': '✨ Подобрать с ИИ',
+    'home.hero.scrollToCatalog': 'Прокрутить к каталогу',
+    'advisor.goToUniversity': 'Перейти к университету',
     'filters.title': 'Фильтры',
     'filters.search': 'Поиск',
     'filters.searchPlaceholder': 'Название университета...',
@@ -169,6 +177,14 @@ const translations: Record<Locale, Record<string, string>> = {
     
     // HomePage
     'home.title': 'Университеттер каталогы',
+    'home.hero.title1': 'Армандағы университетті',
+    'home.hero.title2': 'тап',
+    'home.hero.title3': 'Қазақстанда',
+    'home.hero.subtitle': 'ЖОО, гранттар және жатақханалар бойынша бірыңғай навигатор. Салыстыр, таңда және сенімді түрде түс.',
+    'home.hero.searchButton': 'Іздеуді бастау',
+    'home.hero.aiButton': '✨ ЖИ көмегімен таңдау',
+    'home.hero.scrollToCatalog': 'Каталогқа өту',
+    'advisor.goToUniversity': 'Университетке өту',
     'filters.title': 'Сүзгілер',
     'filters.search': 'Іздеу',
     'filters.searchPlaceholder': 'Университет атауы...',
@@ -314,6 +330,14 @@ const translations: Record<Locale, Record<string, string>> = {
     
     // HomePage
     'home.title': 'University Catalog',
+    'home.hero.title1': 'Find your dream',
+    'home.hero.title2': 'university',
+    'home.hero.title3': 'in Kazakhstan',
+    'home.hero.subtitle': 'Unified navigator for universities, grants, and dormitories. Compare, choose, and apply with confidence.',
+    'home.hero.searchButton': 'Start Search',
+    'home.hero.aiButton': '✨ Match with AI',
+    'home.hero.scrollToCatalog': 'Scroll to catalog',
+    'advisor.goToUniversity': 'Go to University',
     'filters.title': 'Filters',
     'filters.search': 'Search',
     'filters.searchPlaceholder': 'University name...',

@@ -16,7 +16,7 @@ const Layout = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground text-center sm:text-left">
-              © 2024 Каталог университетов Казахстана
+              © 2025 ZeroHub
             </p>
             <AddUniversityModal>
               <Button variant="link" className="text-sm font-medium">

@@ -503,14 +503,14 @@ const HomePage = () => {
     
     if (university) {
       console.log('Найден университет:', university.name, 'ID:', university.id);
-      navigate(`/university/${university.id}`);
+      navigate(`/university/${university.id}`, { replace: false });
     } else {
-      console.error('Университет не найден:', advisorRecommendation.university_name);
+      console.warn('Рекомендованный университет не найден в списке:', advisorRecommendation.university_name);
       console.log('Доступные университеты:', universities.map(u => u.name));
       
-      // Пытаемся найти хотя бы первый университет с похожим названием
+      // Пытаемся найти университет с похожим названием
       const searchName = advisorRecommendation.university_name.toLowerCase();
-      const fallback = universities.find((u) => {
+      let fallback = universities.find((u) => {
         const uniName = u.name.toLowerCase();
         // Ищем по первым словам
         const searchWords = searchName.split(/\s+/).filter(w => w.length > 2);
@@ -518,16 +518,19 @@ const HomePage = () => {
         return searchWords.some(sw => uniWords.some(uw => uw.includes(sw) || sw.includes(uw)));
       });
       
+      // Если не нашли по названию, выбираем первый доступный университет
+      // Это лучше, чем показывать пустой результат
+      if (!fallback && universities.length > 0) {
+        fallback = universities[0];
+        console.log('Выбран первый доступный университет:', fallback.name);
+      }
+      
       if (fallback) {
-        console.log('Найден похожий университет:', fallback.name);
-        navigate(`/university/${fallback.id}`);
-      } else {
-        // Если ничего не нашли, переходим на главную с поиском
-        setSearchQuery(advisorRecommendation.university_name);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        console.log('Переход к университету:', fallback.name);
+        navigate(`/university/${fallback.id}`, { replace: false });
       }
     }
-  }, [advisorRecommendation, findUniversityByName, navigate, universities, setSearchQuery]);
+  }, [advisorRecommendation, findUniversityByName, navigate, universities]);
 
   const toggleFiltersVisible = useCallback(() => {
     setFiltersVisible(prev => !prev);
@@ -572,16 +575,16 @@ const HomePage = () => {
 
             {/* Заголовок */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
-              <span className="block">Найди университет</span>
+              <span className="block">{t('home.hero.title1')}</span>
               <span className="block bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                своей мечты
+                {t('home.hero.title2')}
               </span>
-              <span className="block">в Казахстане</span>
+              <span className="block">{t('home.hero.title3')}</span>
             </h1>
 
             {/* Подзаголовок */}
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Единый навигатор по вузам, грантам и общежитиям. Сравнивай, выбирай и поступай уверенно.
+              {t('home.hero.subtitle')}
             </p>
 
             {/* Кнопки CTA */}
@@ -592,7 +595,7 @@ const HomePage = () => {
                 className="w-full sm:w-auto text-base px-8 py-6 h-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <Search className="w-5 h-5 mr-2" />
-                Начать поиск
+                {t('home.hero.searchButton')}
               </Button>
               <Button
                 onClick={() => setIsAdvisorModalOpen(true)}
@@ -601,7 +604,7 @@ const HomePage = () => {
                 className="w-full sm:w-auto text-base px-8 py-6 h-auto border-2 hover:bg-accent transition-all duration-300"
               >
                 <Sparkles className="w-5 h-5 mr-2" />
-                ✨ Подобрать с ИИ
+                {t('home.hero.aiButton')}
               </Button>
             </div>
 
@@ -610,7 +613,7 @@ const HomePage = () => {
               <button
                 onClick={scrollToCatalog}
                 className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Прокрутить к каталогу"
+                aria-label={t('home.hero.scrollToCatalog')}
               >
                 <ArrowDown className="w-6 h-6 mx-auto" />
               </button>
@@ -948,7 +951,7 @@ const HomePage = () => {
                       onClick={handleGoToUniversity}
                       className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
                     >
-                      Перейти к университету
+                      {t('advisor.goToUniversity')}
                     </Button>
                   </div>
                 </>
