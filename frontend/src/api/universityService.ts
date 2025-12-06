@@ -284,3 +284,273 @@ export const analyzeChance = async (data: IChanceAnalysisRequest): Promise<IChan
   }
 };
 
+export interface IChatContext {
+  type: 'university' | 'compare' | 'home';
+  university?: IUniversity;
+}
+
+export const sendChatMessage = async (
+  message: string,
+  context: IChatContext
+): Promise<string> => {
+  try {
+    // В будущем здесь будет реальный API вызов
+    // const response = await api.post('/ai/chat', { message, context });
+    // return response.data.content;
+    
+    // Mock-реализация для хакатона
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const lowerMessage = message.toLowerCase();
+        let response = '';
+        let currentUniversity: IUniversity | undefined = context.university;
+
+        // Поиск упоминания университета в сообщении (даже если не в контексте)
+        if (!currentUniversity) {
+          // Сначала ищем точное совпадение по названию
+          currentUniversity = mockUniversities.find(u => {
+            const uniNameLower = u.name.toLowerCase();
+            return lowerMessage.includes(uniNameLower) || 
+                   uniNameLower.split(' ').some(word => word.length > 3 && lowerMessage.includes(word));
+          });
+
+          // Если не нашли, используем ключевые слова
+          if (!currentUniversity) {
+            const universityKeywords = [
+              { searchTerms: ['назарбаев', 'nazarbayev', 'nu'], matchName: 'Nazarbayev' },
+              { searchTerms: ['кбту', 'kbtu', 'kazakh-british', 'british technical'], matchName: 'KBTU' },
+              { searchTerms: ['кимеп', 'kimep'], matchName: 'KIMEP' },
+              { searchTerms: ['туран', 'turan'], matchName: 'Turan' },
+              { searchTerms: ['казнпу', 'казанпу', 'kaznpu', 'абая'], matchName: 'КазНПУ' },
+              { searchTerms: ['аль-фараби', 'alfarabi', 'kaznu'], matchName: 'Al-Farabi' },
+            ];
+
+            for (const keyword of universityKeywords) {
+              if (keyword.searchTerms.some(term => lowerMessage.includes(term))) {
+                currentUniversity = mockUniversities.find(u => 
+                  u.name.toLowerCase().includes(keyword.matchName.toLowerCase())
+                );
+                if (currentUniversity) break;
+              }
+            }
+          }
+        }
+
+        // Функция для обработки вопросов о конкретном университете
+        const handleUniversityQuestion = (uni: IUniversity, question: string): string => {
+          const lowerQ = question.toLowerCase();
+
+          // Вопросы о поступлении
+          if (
+            lowerQ.includes('поступлен') ||
+            lowerQ.includes('как поступить') ||
+            lowerQ.includes('требован') ||
+            lowerQ.includes('документ')
+          ) {
+            let answer = `Для поступления в ${uni.name} требуется минимальный балл ЕНТ: ${uni.minEntScore} баллов. `;
+            
+            if (uni.admissions) {
+              if (uni.admissions.requirements && uni.admissions.requirements.length > 0) {
+                answer += `Требования: ${uni.admissions.requirements.slice(0, 3).join(', ')}. `;
+              }
+              if (uni.admissions.deadlines && uni.admissions.deadlines.length > 0) {
+                answer += `Сроки подачи: ${uni.admissions.deadlines[0]}. `;
+              }
+              if (uni.admissions.procedure) {
+                answer += `Процедура: ${uni.admissions.procedure}.`;
+              }
+            }
+            
+            if (uni.international?.requiresIELTS) {
+              answer += ` Также требуется сертификат IELTS${uni.international.minIELTS ? ` (минимум ${uni.international.minIELTS})` : ''}.`;
+            }
+            
+            return answer;
+          }
+
+          // Вопросы о стоимости
+          if (
+            lowerQ.includes('цена') ||
+            lowerQ.includes('стоимость') ||
+            lowerQ.includes('сколько стоит') ||
+            lowerQ.includes('стоит обучение')
+          ) {
+            let answer = `Стоимость обучения в ${uni.name} составляет ${uni.price.toLocaleString('ru-RU')} ₸ в год.`;
+            
+            if (uni.academicPrograms && uni.academicPrograms.length > 0) {
+              const programsWithPrice = uni.academicPrograms.filter(p => p.tuitionFee);
+              if (programsWithPrice.length > 0) {
+                answer += ` Стоимость может варьироваться в зависимости от программы: от ${Math.min(...programsWithPrice.map(p => p.tuitionFee!)).toLocaleString('ru-RU')} до ${Math.max(...programsWithPrice.map(p => p.tuitionFee!)).toLocaleString('ru-RU')} ₸.`;
+              }
+            }
+            return answer;
+          }
+
+          // Вопросы об общежитии
+          if (
+            lowerQ.includes('общежитие') ||
+            lowerQ.includes('общаг') ||
+            lowerQ.includes('жилье') ||
+            lowerQ.includes('проживание')
+          ) {
+            return uni.hasDormitory
+              ? `Да, ${uni.name} предоставляет общежитие для студентов.`
+              : `Нет, ${uni.name} не предоставляет общежитие.`;
+          }
+
+          // Вопросы о программах
+          if (
+            lowerQ.includes('программ') ||
+            lowerQ.includes('специальност') ||
+            lowerQ.includes('направлен')
+          ) {
+            if (uni.academicPrograms && uni.academicPrograms.length > 0) {
+              let answer = `${uni.name} предлагает ${uni.academicPrograms.length} программ обучения. `;
+              const bachelorPrograms = uni.academicPrograms.filter(p => p.degree === 'Bachelor');
+              const masterPrograms = uni.academicPrograms.filter(p => p.degree === 'Master');
+              const phdPrograms = uni.academicPrograms.filter(p => p.degree === 'PhD');
+              
+              const parts: string[] = [];
+              if (bachelorPrograms.length > 0) parts.push(`${bachelorPrograms.length} бакалаврских`);
+              if (masterPrograms.length > 0) parts.push(`${masterPrograms.length} магистерских`);
+              if (phdPrograms.length > 0) parts.push(`${phdPrograms.length} докторских`);
+              
+              answer += `Включая ${parts.join(', ')} программ.`;
+              return answer;
+            } else {
+              return `${uni.name} предлагает различные программы обучения. Подробную информацию можно найти на странице университета.`;
+            }
+          }
+
+          // Вопросы о рейтинге
+          if (lowerQ.includes('рейтинг') || lowerQ.includes('оценк')) {
+            return `Рейтинг ${uni.name} составляет ${uni.rating}/5.0.`;
+          }
+
+          // Вопросы о городе
+          if (
+            lowerQ.includes('город') ||
+            lowerQ.includes('где находится') ||
+            lowerQ.includes('локация')
+          ) {
+            return `${uni.name} находится в городе ${uni.city}.`;
+          }
+
+          // Вопросы о минимальном балле
+          if (
+            lowerQ.includes('балл') ||
+            lowerQ.includes('ент') ||
+            lowerQ.includes('проходной')
+          ) {
+            let answer = `Минимальный балл ЕНТ для поступления в ${uni.name} составляет ${uni.minEntScore} баллов.`;
+            
+            if (uni.academicPrograms && uni.academicPrograms.length > 0) {
+              const programsWithScore = uni.academicPrograms.filter(p => p.minEntScore);
+              if (programsWithScore.length > 0) {
+                const minScore = Math.min(...programsWithScore.map(p => p.minEntScore!));
+                const maxScore = Math.max(...programsWithScore.map(p => p.minEntScore!));
+                answer += ` Для отдельных программ требования могут варьироваться от ${minScore} до ${maxScore} баллов.`;
+              }
+            }
+            return answer;
+          }
+
+          // Вопросы о грантах
+          if (lowerQ.includes('грант') || lowerQ.includes('стипенди')) {
+            if (uni.grantsPerYear) {
+              return `${uni.name} предоставляет ${uni.grantsPerYear} грантов в год.`;
+            } else {
+              return `Информацию о грантах и стипендиях в ${uni.name} можно уточнить в приемной комиссии.`;
+            }
+          }
+
+          // Общие вопросы о университете
+          return `О ${uni.name}: это ${uni.isPrivate ? 'частный' : 'государственный'} университет в ${uni.city} с рейтингом ${uni.rating}/5. Стоимость обучения: ${uni.price.toLocaleString('ru-RU')} ₸/год. Минимальный балл ЕНТ: ${uni.minEntScore}. ${uni.hasDormitory ? 'Предоставляет общежитие.' : 'Не предоставляет общежитие.'} Чем еще могу помочь?`;
+        };
+
+        // Обработка общих вопросов
+        if (
+          lowerMessage.includes('как ты работаешь') ||
+          lowerMessage.includes('что ты умеешь') ||
+          lowerMessage.includes('твои возможности')
+        ) {
+          response = 'Я AI Advisor — ваш помощник в выборе университета. Я могу:\n\n' +
+            '• Ответить на вопросы о конкретных университетах (стоимость, программы, поступление, общежитие)\n' +
+            '• Помочь с выбором университета на основе ваших критериев\n' +
+            '• Сравнить университеты по различным параметрам\n' +
+            '• Рассказать о требованиях к поступлению и документах\n' +
+            '• Предоставить информацию о грантах и стипендиях\n\n' +
+            'Просто задайте вопрос или упомяните название университета, и я помогу!';
+        }
+        // Вопросы об интеллекте
+        else if (
+          lowerMessage.includes('насколько ты умен') ||
+          lowerMessage.includes('насколько ты умный') ||
+          lowerMessage.includes('ты умный')
+        ) {
+          response = 'Я специализированный AI-ассистент для работы с информацией об университетах Казахстана. ' +
+            'Я могу анализировать данные о более чем 20 университетах, их программах, стоимости, требованиях к поступлению и многом другом. ' +
+            'Моя задача — помочь вам найти подходящий университет и ответить на все ваши вопросы. ' +
+            'Попробуйте спросить меня о конкретном университете или задать вопрос о поступлении!';
+        }
+        // Вопросы о помощи с выбором
+        else if (
+          lowerMessage.includes('помоги с выбором') ||
+          lowerMessage.includes('помоги выбрать') ||
+          lowerMessage.includes('какой университет') ||
+          lowerMessage.includes('посоветуй университет')
+        ) {
+          response = 'Чтобы помочь вам с выбором университета, мне нужна дополнительная информация:\n\n' +
+            '• Какой у вас балл ЕНТ?\n' +
+            '• Какие профильные предметы вас интересуют?\n' +
+            '• В каком городе вы хотели бы учиться?\n' +
+            '• Какая у вас карьерная цель?\n' +
+            '• Важен ли вам бюджет (стоимость обучения)?\n' +
+            '• Нужно ли общежитие?\n\n' +
+            'Также вы можете использовать функцию "AI Advisor" на главной странице для получения персонализированных рекомендаций. ' +
+            'Или задайте мне конкретный вопрос, например: "Сколько стоит обучение в КБТУ?" или "Как поступить в Назарбаев Университет?"';
+        }
+        // Если упомянут конкретный университет
+        else if (currentUniversity) {
+          response = handleUniversityQuestion(currentUniversity, message);
+        }
+        // Если есть контекст университета
+        else if (context.type === 'university' && context.university) {
+          response = handleUniversityQuestion(context.university, message);
+        }
+        // Контекст сравнения
+        else if (context.type === 'compare') {
+          if (
+            lowerMessage.includes('поступлен') ||
+            lowerMessage.includes('стоимость') ||
+            lowerMessage.includes('цена') ||
+            lowerMessage.includes('балл') ||
+            lowerMessage.includes('программ')
+          ) {
+            // Пытаемся найти университет в сообщении
+            if (currentUniversity) {
+              response = handleUniversityQuestion(currentUniversity, message);
+            } else {
+              response = 'Вы находитесь на странице сравнения. Чтобы получить информацию о конкретном университете, упомяните его название в вопросе. Например: "Сколько стоит обучение в КБТУ?" или "Как поступить в Назарбаев Университет?"';
+            }
+          } else {
+            response = 'Вы находитесь на странице сравнения университетов. Я могу помочь с анализом выбранных университетов, сравнением их характеристик и рекомендациями. ' +
+              'Задайте конкретный вопрос, например: "Сколько стоит обучение в КБТУ?" или "Как поступить в Назарбаев Университет?"';
+          }
+        }
+        // Общий контекст
+        else {
+          response = 'Я могу помочь вам с выбором университета, ответить на вопросы о программах, стоимости, требованиях к поступлению и многом другом. ' +
+            'Упомяните название университета в вашем вопросе, например: "Сколько стоит обучение в КБТУ?" или "Как поступить в Назарбаев Университет?" ' +
+            'Также могу рассказать о том, как я работаю, или помочь с выбором университета.';
+        }
+
+        resolve(response);
+      }, 1000 + Math.random() * 500); // Задержка 1-1.5 секунды
+    });
+  } catch (error) {
+    console.error('Ошибка при отправке сообщения в чат:', error);
+    throw error;
+  }
+};
+
