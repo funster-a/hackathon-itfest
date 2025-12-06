@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from '@/components/ui/pagination';
-import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, Grid3x3, List } from 'lucide-react';
+import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, Grid3x3, List, ArrowDown, GraduationCap } from 'lucide-react';
 import { useCompareStore } from '../store/useCompareStore';
 import { useLocale } from '@/components/LocaleProvider';
 import UniversityCard from '@/components/UniversityCard';
@@ -159,6 +159,7 @@ const HomePage = () => {
   const [universities, setUniversities] = useState<IUniversity[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const catalogRef = useRef<HTMLDivElement>(null);
 
   // Загрузка университетов с API
   useEffect(() => {
@@ -542,11 +543,87 @@ const HomePage = () => {
     }
   }, []);
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold tracking-tight mb-8">{t('home.title')}</h1>
+  const scrollToCatalog = useCallback(() => {
+    catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
-      {/* Блок фильтров и советника */}
+  return (
+    <div className="w-full">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10 py-20 sm:py-28 lg:py-32">
+        {/* Декоративные элементы */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Иконка */}
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl"></div>
+                <div className="relative bg-primary/10 p-4 rounded-full">
+                  <GraduationCap className="w-12 h-12 sm:w-16 sm:h-16 text-primary" />
+                </div>
+              </div>
+            </div>
+
+            {/* Заголовок */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
+              <span className="block">Найди университет</span>
+              <span className="block bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                своей мечты
+              </span>
+              <span className="block">в Казахстане</span>
+            </h1>
+
+            {/* Подзаголовок */}
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              Единый навигатор по вузам, грантам и общежитиям. Сравнивай, выбирай и поступай уверенно.
+            </p>
+
+            {/* Кнопки CTA */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+              <Button
+                onClick={scrollToCatalog}
+                size="lg"
+                className="w-full sm:w-auto text-base px-8 py-6 h-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Search className="w-5 h-5 mr-2" />
+                Начать поиск
+              </Button>
+              <Button
+                onClick={() => setIsAdvisorModalOpen(true)}
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto text-base px-8 py-6 h-auto border-2 hover:bg-accent transition-all duration-300"
+              >
+                <Sparkles className="w-5 h-5 mr-2" />
+                ✨ Подобрать с ИИ
+              </Button>
+            </div>
+
+            {/* Индикатор прокрутки */}
+            <div className="pt-8 animate-bounce">
+              <button
+                onClick={scrollToCatalog}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Прокрутить к каталогу"
+              >
+                <ArrowDown className="w-6 h-6 mx-auto" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Каталог */}
+      <div ref={catalogRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-3xl font-bold tracking-tight mb-8">{t('home.title')}</h1>
+
+        {/* Блок фильтров и советника */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Фильтры - слева */}
         <Card>
@@ -1005,6 +1082,7 @@ const HomePage = () => {
             </CardContent>
           </Card>
         )}
+      </div>
       </div>
 
       {/* Модальное окно ИИ-Советника */}
