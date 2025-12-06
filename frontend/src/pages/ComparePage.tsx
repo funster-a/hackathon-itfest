@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Trash2, Check, X, ArrowLeft, GraduationCap, Building2 } from 'lucide-react';
+import { Trash2, Check, X, ArrowLeft, GraduationCap, Building2, Sparkles } from 'lucide-react';
+import { useState } from 'react';
 import { useCompareStore } from '../store/useCompareStore';
 import { useLocale } from '@/components/LocaleProvider';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,10 +14,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import CompareArbitrationModal from '@/components/CompareArbitrationModal';
 
 const ComparePage = () => {
   const { compareList, compareProgramsList, removeFromCompare, removeProgramFromCompare } = useCompareStore();
   const { t } = useLocale();
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
   // Если нет ни университетов, ни программ
   if (compareList.length === 0 && compareProgramsList.length === 0) {
@@ -38,6 +41,19 @@ const ComparePage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold tracking-tight">{t('compare.title')}</h1>
+        {compareList.length >= 2 && (
+          <Button
+            onClick={() => setIsAiModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            Сравнить с ИИ
+          </Button>
+        )}
+      </div>
+
       <Tabs defaultValue="universities" className="w-full">
         <TabsList>
           <TabsTrigger value="universities" className="flex items-center gap-2">
@@ -333,7 +349,9 @@ const ComparePage = () => {
                       <TableCell></TableCell>
                       {compareProgramsList.map((item, index) => (
                         <TableCell key={`score-${index}`} className="pl-6">
-                          {item.program.minEntScore ?? '-'}
+                          {item.program.minEntScore != null && item.program.minEntScore > 0
+                            ? item.program.minEntScore
+                            : '-'}
                         </TableCell>
                       ))}
                       <TableCell></TableCell>
@@ -343,10 +361,12 @@ const ComparePage = () => {
                       <TableCell></TableCell>
                       {compareProgramsList.map((item, index) => (
                         <TableCell key={`internship-${index}`} className="pl-6">
-                          {item.program.hasInternship ? (
+                          {item.program.hasInternship === true ? (
                             <Check className="w-5 h-5 text-green-600" />
-                          ) : (
+                          ) : item.program.hasInternship === false ? (
                             <X className="w-5 h-5 text-red-600" />
+                          ) : (
+                            '-'
                           )}
                         </TableCell>
                       ))}
@@ -357,10 +377,12 @@ const ComparePage = () => {
                       <TableCell></TableCell>
                       {compareProgramsList.map((item, index) => (
                         <TableCell key={`double-${index}`} className="pl-6">
-                          {item.program.hasDoubleDegree ? (
+                          {item.program.hasDoubleDegree === true ? (
                             <Check className="w-5 h-5 text-green-600" />
-                          ) : (
+                          ) : item.program.hasDoubleDegree === false ? (
                             <X className="w-5 h-5 text-red-600" />
+                          ) : (
+                            '-'
                           )}
                         </TableCell>
                       ))}
@@ -371,7 +393,7 @@ const ComparePage = () => {
                       <TableCell></TableCell>
                       {compareProgramsList.map((item, index) => (
                         <TableCell key={`employment-${index}`} className="pl-6">
-                          {item.program.employmentRate !== null && item.program.employmentRate !== undefined
+                          {item.program.employmentRate != null && item.program.employmentRate > 0
                             ? `${item.program.employmentRate}%`
                             : '-'}
                         </TableCell>
@@ -403,6 +425,12 @@ const ComparePage = () => {
         <ArrowLeft className="w-4 h-4 mr-2" />
         {t('compare.backToCatalog')}
       </Link>
+
+      <CompareArbitrationModal
+        open={isAiModalOpen}
+        onOpenChange={setIsAiModalOpen}
+        universities={compareList}
+      />
     </div>
   );
 };

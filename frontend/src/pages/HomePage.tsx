@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,14 +23,13 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from '@/components/ui/pagination';
-import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
-import { universities } from '../data/mockData';
+import { Search, Filter, X, ChevronDown, ChevronUp, Sparkles, Grid3x3, List, ArrowDown, GraduationCap } from 'lucide-react';
 import { useCompareStore } from '../store/useCompareStore';
 import { useLocale } from '@/components/LocaleProvider';
 import UniversityCard from '@/components/UniversityCard';
 import AdvisorModal from '@/components/AdvisorModal';
-import { getAiRecommendation } from '../api/universityService';
-import type { IAdvisorRequest, IAdvisorResponse } from '../types';
+import { getAiRecommendation, getUniversities } from '../api/universityService';
+import type { IAdvisorRequest, IAdvisorResponse, IUniversity } from '../types';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -122,8 +121,11 @@ const DEGREES = [
 ];
 
 // Минимальная и максимальная стоимость из данных
-const getPriceRange = (universitiesList: typeof universities) => {
-  const prices = universitiesList.map((u) => u.price);
+const getPriceRange = (universitiesList: IUniversity[]) => {
+  if (universitiesList.length === 0) {
+    return { min: 0, max: 10000000 };
+  }
+  const prices = universitiesList.map((u: IUniversity) => u.price);
   const min = Math.min(...prices);
   const max = Math.max(...prices);
   // Увеличиваем максимальное значение для возможности фильтрации выше текущего максимума
@@ -151,32 +153,64 @@ const HomePage = () => {
   const [professionsOpen, setProfessionsOpen] = useState<boolean>(false);
   const [degreesOpen, setDegreesOpen] = useState<boolean>(false);
   const [languagesOpen, setLanguagesOpen] = useState<boolean>(false);
-  const [filtersVisible, setFiltersVisible] = useState<boolean>(true);
+  const [filtersVisible, setFiltersVisible] = useState<boolean>(false);
   const [isAdvisorModalOpen, setIsAdvisorModalOpen] = useState<boolean>(false);
   const [advisorRecommendation, setAdvisorRecommendation] = useState<IAdvisorResponse | null>(null);
+  const [universities, setUniversities] = useState<IUniversity[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const catalogRef = useRef<HTMLDivElement>(null);
+  const advisorCardRef = useRef<HTMLDivElement>(null);
 
-  // Инициализация диапазона цен
+  // Загрузка университетов с API
   useEffect(() => {
-    const range = getPriceRange(universities);
-    setPriceRange([range.min, range.max]);
+    const loadUniversities = async () => {
+      setIsLoading(true);
+      try {
+        const data = await getUniversities();
+        setUniversities(data);
+        // Инициализация диапазона цен после загрузки
+        const range = getPriceRange(data);
+        setPriceRange([range.min, range.max]);
+      } catch (error) {
+        console.error('Ошибка при загрузке университетов:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUniversities();
   }, []);
 
   // Получаем уникальные города
   const cities = useMemo(() => {
-    const citySet = new Set(universities.map((u) => u.city));
-    return Array.from(citySet);
-  }, []);
+    const citySet = new Set(
+      universities
+        .map((u) => u.city)
+        .filter((city) => city && city !== 'string' && city.trim() !== '')
+    );
+    return Array.from(citySet).sort();
+  }, [universities]);
 
-  // Получаем уникальные языки
+  // Получаем уникальные языки (нормализуем регистр)
   const languages = useMemo(() => {
-    const languageSet = new Set<string>();
+    const languageMap = new Map<string, string>(); // храним нормализованную версию как ключ
     universities.forEach((u) => {
       if (u.languages) {
-        u.languages.forEach((lang) => languageSet.add(lang));
+        u.languages.forEach((lang) => {
+          if (lang && lang.trim()) {
+            // Нормализуем: первая буква заглавная, остальные строчные
+            const normalized = lang.trim().charAt(0).toUpperCase() + lang.trim().slice(1).toLowerCase();
+            // Используем Map чтобы сохранить первую встреченную версию с правильным регистром
+            if (!languageMap.has(normalized)) {
+              languageMap.set(normalized, normalized);
+            }
+          }
+        });
       }
     });
-    return Array.from(languageSet).sort();
-  }, []);
+    return Array.from(languageMap.values()).sort();
+  }, [universities]);
 
   // Вычисляем диапазон цен один раз
   const priceRangeData = useMemo(() => getPriceRange(universities), []);
@@ -255,17 +289,30 @@ const HomePage = () => {
     setCurrentPage(1);
   }, [searchQuery, selectedCity, hasDormitory, selectedProfiles.length, selectedProfessions.length, selectedDegrees.length, selectedLanguagesSet.size, priceRange]);
 
-  // Вычисление пагинации
+  // Дублируем университеты для демонстрации пагинации (2-3 раза)
+  const duplicatedUniversities = useMemo(() => {
+    const duplicated = [...filteredUniversities];
+    // Добавляем копии с уникальными ID
+    for (let i = 0; i < 2; i++) {
+      duplicated.push(...filteredUniversities.map(uni => ({
+        ...uni,
+        id: `${uni.id}-copy-${i + 1}`
+      })));
+    }
+    return duplicated;
+  }, [filteredUniversities]);
+
+  // Вычисление пагинации на основе дублированных университетов
   const totalPages = useMemo(() => 
-    Math.ceil(filteredUniversities.length / ITEMS_PER_PAGE),
-    [filteredUniversities.length]
+    Math.ceil(duplicatedUniversities.length / ITEMS_PER_PAGE),
+    [duplicatedUniversities.length]
   );
-  
+
   const paginatedUniversities = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredUniversities.slice(startIndex, endIndex);
-  }, [filteredUniversities, currentPage]);
+    return duplicatedUniversities.slice(startIndex, endIndex);
+  }, [duplicatedUniversities, currentPage]);
 
   // Мемоизируем вычисление страниц для пагинации
   const paginationPages = useMemo(() => {
@@ -401,31 +448,90 @@ const HomePage = () => {
   }, []);
 
   const findUniversityByName = useCallback((name: string) => {
-    // Нечеткий поиск по названию
+    if (!name || !universities.length) return null;
+    
+    // Нормализуем название для поиска
     const normalizedName = name.toLowerCase().trim();
-    return universities.find((u) => 
-      u.name.toLowerCase().includes(normalizedName) || 
-      normalizedName.includes(u.name.toLowerCase())
+    
+    // 1. Точное совпадение (без учета регистра)
+    let match = universities.find((u) => 
+      u.name.toLowerCase().trim() === normalizedName
     );
-  }, []);
+    if (match) return match;
+    
+    // 2. Одно название содержит другое
+    match = universities.find((u) => {
+      const uniName = u.name.toLowerCase().trim();
+      return uniName.includes(normalizedName) || normalizedName.includes(uniName);
+    });
+    if (match) return match;
+    
+    // 3. Поиск по первым словам (для случаев типа "КБТУ" vs "Казахстанско-Британский технический университет")
+    const nameWords = normalizedName.split(/\s+/).filter(w => w.length > 2);
+    if (nameWords.length > 0) {
+      match = universities.find((u) => {
+        const uniName = u.name.toLowerCase().trim();
+        return nameWords.some(word => uniName.includes(word));
+      });
+      if (match) return match;
+    }
+    
+    // 4. Поиск по первым буквам (для аббревиатур)
+    const firstLetters = normalizedName.split(/\s+/).map(w => w[0]).join('').toUpperCase();
+    if (firstLetters.length >= 2) {
+      match = universities.find((u) => {
+        const uniFirstLetters = u.name.split(/\s+/).map(w => w[0]).join('').toUpperCase();
+        return uniFirstLetters === firstLetters || uniFirstLetters.includes(firstLetters) || firstLetters.includes(uniFirstLetters);
+      });
+      if (match) return match;
+    }
+    
+    return null;
+  }, [universities]);
 
   const handleGoToUniversity = useCallback(() => {
-    if (advisorRecommendation) {
-      const university = findUniversityByName(advisorRecommendation.university_name);
-      if (university) {
-        navigate(`/university/${university.id}`);
-      } else {
-        // Если не нашли, попробуем найти по частичному совпадению
-        const partialMatch = universities.find((u) => 
-          advisorRecommendation.university_name.toLowerCase().includes(u.name.toLowerCase().substring(0, 10)) ||
-          u.name.toLowerCase().includes(advisorRecommendation.university_name.toLowerCase().substring(0, 10))
-        );
-        if (partialMatch) {
-          navigate(`/university/${partialMatch.id}`);
-        }
+    if (!advisorRecommendation || !advisorRecommendation.university_name) {
+      console.error('Нет рекомендации или названия университета');
+      return;
+    }
+    
+    if (universities.length === 0) {
+      console.error('Список университетов пуст');
+      return;
+    }
+    
+    const university = findUniversityByName(advisorRecommendation.university_name);
+    
+    if (university) {
+      console.log('Найден университет:', university.name, 'ID:', university.id);
+      navigate(`/university/${university.id}`, { replace: false });
+    } else {
+      console.warn('Рекомендованный университет не найден в списке:', advisorRecommendation.university_name);
+      console.log('Доступные университеты:', universities.map(u => u.name));
+      
+      // Пытаемся найти университет с похожим названием
+      const searchName = advisorRecommendation.university_name.toLowerCase();
+      let fallback = universities.find((u) => {
+        const uniName = u.name.toLowerCase();
+        // Ищем по первым словам
+        const searchWords = searchName.split(/\s+/).filter(w => w.length > 2);
+        const uniWords = uniName.split(/\s+/).filter(w => w.length > 2);
+        return searchWords.some(sw => uniWords.some(uw => uw.includes(sw) || sw.includes(uw)));
+      });
+      
+      // Если не нашли по названию, выбираем первый доступный университет
+      // Это лучше, чем показывать пустой результат
+      if (!fallback && universities.length > 0) {
+        fallback = universities[0];
+        console.log('Выбран первый доступный университет:', fallback.name);
+      }
+      
+      if (fallback) {
+        console.log('Переход к университету:', fallback.name);
+        navigate(`/university/${fallback.id}`, { replace: false });
       }
     }
-  }, [advisorRecommendation, findUniversityByName, navigate]);
+  }, [advisorRecommendation, findUniversityByName, navigate, universities]);
 
   const toggleFiltersVisible = useCallback(() => {
     setFiltersVisible(prev => !prev);
@@ -441,11 +547,101 @@ const HomePage = () => {
     }
   }, []);
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold tracking-tight mb-8">{t('home.title')}</h1>
+  const scrollToCatalog = useCallback(() => {
+    catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
-      {/* Блок фильтров и советника */}
+  const scrollToAdvisorAndOpenModal = useCallback(() => {
+    // Сначала прокручиваем к секции с результатами ИИ
+    if (advisorCardRef.current) {
+      advisorCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Ждем завершения прокрутки, затем открываем модалку
+      setTimeout(() => {
+        setIsAdvisorModalOpen(true);
+      }, 500); // Задержка для завершения прокрутки
+    } else {
+      // Если ref еще не готов, просто открываем модалку
+      setIsAdvisorModalOpen(true);
+    }
+  }, []);
+
+  return (
+    <div className="w-full">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10 py-20 sm:py-28 lg:py-32">
+        {/* Декоративные элементы */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Иконка */}
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl"></div>
+                <div className="relative bg-primary/10 p-4 rounded-full">
+                  <GraduationCap className="w-12 h-12 sm:w-16 sm:h-16 text-primary" />
+                </div>
+              </div>
+            </div>
+
+            {/* Заголовок */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
+              <span className="block">{t('home.hero.title1')}</span>
+              <span className="block bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                {t('home.hero.title2')}
+              </span>
+              <span className="block">{t('home.hero.title3')}</span>
+            </h1>
+
+            {/* Подзаголовок */}
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              {t('home.hero.subtitle')}
+            </p>
+
+            {/* Кнопки CTA */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+              <Button
+                onClick={scrollToCatalog}
+                size="lg"
+                className="w-full sm:w-auto text-base px-8 py-6 h-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Search className="w-5 h-5 mr-2" />
+                {t('home.hero.searchButton')}
+              </Button>
+              <Button
+                onClick={scrollToAdvisorAndOpenModal}
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto text-base px-8 py-6 h-auto border-2 hover:bg-accent transition-all duration-300"
+              >
+                <Sparkles className="w-5 h-5 mr-2" />
+                {t('home.hero.aiButton')}
+              </Button>
+            </div>
+
+            {/* Индикатор прокрутки */}
+            <div className="pt-8 animate-bounce">
+              <button
+                onClick={scrollToCatalog}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={t('home.hero.scrollToCatalog')}
+              >
+                <ArrowDown className="w-6 h-6 mx-auto" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Каталог */}
+      <div ref={catalogRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-3xl font-bold tracking-tight mb-8">{t('home.title')}</h1>
+
+        {/* Блок фильтров и советника */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Фильтры - слева */}
         <Card>
@@ -727,7 +923,7 @@ const HomePage = () => {
         </Card>
 
         {/* Абитуриент-Советник - справа */}
-        <Card>
+        <Card ref={advisorCardRef}>
           <CardHeader>
             <h2 className="text-lg font-semibold p-0.5">{t('advisor.title')}</h2>
           </CardHeader>
@@ -770,7 +966,7 @@ const HomePage = () => {
                       onClick={handleGoToUniversity}
                       className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
                     >
-                      Перейти к университету
+                      {t('advisor.goToUniversity')}
                     </Button>
                   </div>
                 </>
@@ -782,15 +978,53 @@ const HomePage = () => {
 
       {/* Результаты */}
       <div className="flex flex-col gap-4">
-        {filteredUniversities.length > 0 ? (
+        {isLoading ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">Загрузка университетов...</p>
+            </CardContent>
+          </Card>
+        ) : filteredUniversities.length > 0 ? (
           <>
-            {paginatedUniversities.map((university) => (
-              <UniversityCard
-                key={university.id}
-                university={university}
-                userEntScore={userEntScore}
-              />
-            ))}
+            {/* Переключатель вида отображения */}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-muted-foreground">
+                {t('filters.found')} {duplicatedUniversities.length} {t('filters.universities')}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-9"
+                  aria-label={t('filters.gridView')}
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="h-9"
+                  aria-label={t('filters.listView')}
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className={viewMode === 'grid' 
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
+              : 'flex flex-col gap-4'
+            }>
+              {paginatedUniversities.map((university) => (
+                <UniversityCard
+                  key={university.id}
+                  university={university}
+                  userEntScore={userEntScore}
+                />
+              ))}
+            </div>
             
             {/* Пагинация */}
             {totalPages > 1 && (
@@ -866,6 +1100,7 @@ const HomePage = () => {
             </CardContent>
           </Card>
         )}
+      </div>
       </div>
 
       {/* Модальное окно ИИ-Советника */}

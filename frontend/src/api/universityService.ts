@@ -1,6 +1,145 @@
 import api from './axios';
-import type { IAdvisorRequest, IAdvisorResponse } from '../types';
-import { universities } from '../data/mockData';
+import type { 
+  IAdvisorRequest, 
+  IAdvisorResponse, 
+  IUniversity, 
+  IBackendUniversity,
+  IBackendProgram,
+  IAcademicProgram,
+  IInternational
+} from '../types';
+import { universities as mockUniversities } from '../data/mockData';
+
+// Адаптер для преобразования данных бэкенда в формат фронтенда
+const adaptUniversity = (backendUni: IBackendUniversity, programs: IBackendProgram[] = []): IUniversity => {
+  // Используем программы из ответа API, если они есть, иначе используем переданные
+  const uniPrograms = backendUni.programs || programs;
+  // Парсим languages (может быть JSON строка или разделенная запятыми)
+  let languagesArray: string[] = [];
+  try {
+    if (backendUni.languages) {
+      // Пробуем распарсить как JSON
+      const parsed = JSON.parse(backendUni.languages);
+      languagesArray = Array.isArray(parsed) ? parsed : [backendUni.languages];
+    }
+  } catch {
+    // Если не JSON, пробуем разделить по запятым
+    languagesArray = backendUni.languages ? backendUni.languages.split(',').map(l => l.trim()).filter(Boolean) : [];
+  }
+  
+  // Нормализуем регистр языков (первая буква заглавная, остальные строчные)
+  languagesArray = languagesArray.map(lang => {
+    if (!lang || !lang.trim()) return lang;
+    return lang.trim().charAt(0).toUpperCase() + lang.trim().slice(1).toLowerCase();
+  });
+
+  // Преобразуем программы
+  const academicPrograms: IAcademicProgram[] = uniPrograms
+    .filter(p => p.university_id === backendUni.id)
+    .map(p => ({
+      name: p.name,
+      degree: p.degree as 'Bachelor' | 'Master' | 'PhD',
+      description: p.description || undefined,
+      duration: p.duration || undefined,
+      language: p.language || undefined,
+      tuitionFee: p.price || undefined,
+      // 0 означает отсутствие данных для числовых полей
+      minEntScore: (p.min_ent_score != null && p.min_ent_score > 0) ? p.min_ent_score : null,
+      // Для boolean полей: преобразуем false в undefined, чтобы показывать "-" вместо крестика
+      // Это позволяет различать "нет данных" (undefined) и "данные есть, но false" (false)
+      // Но так как в базе 0 означает отсутствие данных, преобразуем false в undefined
+      hasInternship: p.internship === true ? true : undefined,
+      hasDoubleDegree: p.double_degree_program === true ? true : undefined,
+      employmentRate: (p.employment != null && p.employment > 0) ? p.employment : null,
+    }));
+
+  // Парсим JSON поля для international
+  const parseJsonField = (field: string | null | undefined): string[] => {
+    if (!field) return [];
+    try {
+      const parsed = JSON.parse(field);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  // Формируем объект international
+  const international: IInternational = {
+    exchangePrograms: parseJsonField(backendUni.exchange_programs), // Только если есть конкретные программы
+    partners: parseJsonField(backendUni.partners),
+    foreignStudentOpps: parseJsonField(backendUni.foreign_student_opps),
+    hasExchangeProgram: backendUni.exchange_program,
+    hasDoubleDegree: backendUni.double_degree_program,
+    requiresIELTS: backendUni.IELTS_sertificate,
+    minIELTS: backendUni.min_ielts ? Number(backendUni.min_ielts) : undefined,
+    doubleDegreePrograms: parseJsonField(backendUni.double_degree_programs), // Только если есть конкретные программы
+  };
+
+  return {
+    id: backendUni.id.toString(),
+    name: backendUni.name,
+    description: backendUni.description,
+    city: backendUni.city,
+    price: backendUni.price,
+    minEntScore: backendUni.min_ent_score,
+    hasDormitory: backendUni.has_dormitory,
+    hasMilitaryDept: backendUni.has_military_dept || false,
+    rating: Number(backendUni.rating),
+    hasTour: backendUni.has_tour,
+    tourUrl: backendUni.tour_url || undefined,
+    imageUrl: backendUni.logo_url || undefined,
+    isPrivate: backendUni.format?.toLowerCase() === 'private',
+    languages: languagesArray.length > 0 ? languagesArray : undefined,
+    grantsPerYear: backendUni.number_of_grants,
+    academicPrograms: academicPrograms.length > 0 ? academicPrograms : undefined,
+    admissions: backendUni.admission_info ? {
+      requirements: Array.isArray(backendUni.admission_info.requirements) 
+        ? backendUni.admission_info.requirements 
+        : (backendUni.admission_info.requirements ? [backendUni.admission_info.requirements] : []),
+      deadlines: Array.isArray(backendUni.admission_info.deadlines) 
+        ? backendUni.admission_info.deadlines 
+        : (backendUni.admission_info.deadlines ? [backendUni.admission_info.deadlines] : []),
+      scholarships: Array.isArray(backendUni.admission_info.scholarships) 
+        ? backendUni.admission_info.scholarships 
+        : (backendUni.admission_info.scholarships ? [backendUni.admission_info.scholarships] : []),
+      procedure: backendUni.admission_info.procedure || '',
+    } : undefined,
+    international: international,
+    mission: backendUni.mission_text,
+    history: backendUni.history,
+  };
+};
+
+// API функции
+export const getUniversities = async (): Promise<IUniversity[]> => {
+  try {
+    const universitiesResponse = await api.get<IBackendUniversity[]>('/');
+    // Программы теперь приходят вместе с университетами
+    return universitiesResponse.data.map(uni => adaptUniversity(uni, []));
+  } catch (error) {
+    console.error('Ошибка при получении университетов:', error);
+    // Fallback на mock данные
+    return mockUniversities;
+  }
+};
+
+export const getUniversityById = async (id: string): Promise<IUniversity | null> => {
+  try {
+    const universityId = parseInt(id, 10);
+    if (isNaN(universityId)) {
+      return null;
+    }
+
+    const universityResponse = await api.get<IBackendUniversity>(`/get/${universityId}`);
+    // Программы и admission_info теперь приходят вместе с университетом
+    return adaptUniversity(universityResponse.data, []);
+  } catch (error) {
+    console.error('Ошибка при получении университета:', error);
+    // Fallback на mock данные
+    return mockUniversities.find(u => u.id === id) || null;
+  }
+};
 
 export const getAiRecommendation = async (data: IAdvisorRequest): Promise<IAdvisorResponse> => {
   try {
@@ -12,10 +151,133 @@ export const getAiRecommendation = async (data: IAdvisorRequest): Promise<IAdvis
     return new Promise((resolve) => {
       setTimeout(() => {
         // Выбираем случайный вуз из mockData
-        const randomUniversity = universities[Math.floor(Math.random() * universities.length)];
+        const randomUniversity = mockUniversities[Math.floor(Math.random() * mockUniversities.length)];
         resolve({
           university_name: randomUniversity.name,
           short_reason: `ИИ рекомендует этот вуз, так как он соответствует вашим интересам (${data.interests}), профильным предметам (${data.profile_subjects}) и карьерной цели "${data.career_goal}". Университет находится в городе ${randomUniversity.city}, что соответствует вашим предпочтениям.`,
+        });
+      }, 1500);
+    });
+  }
+};
+
+export interface ICompareAiRequest {
+  universities: IUniversity[];
+  userGoal: string;
+}
+
+export interface ICompareAiResponse {
+  winner: string;
+  analysis: string;
+  reasoning: string;
+}
+
+export const compareWithAi = async (data: ICompareAiRequest): Promise<ICompareAiResponse> => {
+  try {
+    const response = await api.post<ICompareAiResponse>('/ai/compare', data);
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при сравнении университетов с ИИ:', error);
+    // Mock-ответ для MVP
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const universities = data.universities;
+        if (universities.length === 0) {
+          resolve({
+            winner: '',
+            analysis: 'Не выбрано ни одного университета для сравнения.',
+            reasoning: '',
+          });
+          return;
+        }
+        
+        // Выбираем первый университет как победителя (можно улучшить логику)
+        const winner = universities[0];
+        const otherUnis = universities.slice(1);
+        
+        // Генерируем анализ на основе данных
+        const priceComparison = universities.map(u => `${u.name}: ${u.price.toLocaleString()} ₸`).join(', ');
+        const ratingComparison = universities.map(u => `${u.name}: ${u.rating}/5`).join(', ');
+        
+        let analysis = `## Сравнение университетов\n\n`;
+        analysis += `**Стоимость обучения:** ${priceComparison}\n\n`;
+        analysis += `**Рейтинг:** ${ratingComparison}\n\n`;
+        
+        if (data.userGoal.toLowerCase().includes('программист') || data.userGoal.toLowerCase().includes('it')) {
+          analysis += `Исходя из вашей цели стать программистом, **${winner.name}** выглядит предпочтительнее благодаря сильной базе IT`;
+          if (winner.price > otherUnis[0]?.price) {
+            analysis += `, несмотря на более высокую цену`;
+          }
+          analysis += `. Университет находится в ${winner.city} и имеет рейтинг ${winner.rating}/5.`;
+        } else if (data.userGoal.toLowerCase().includes('цена') || data.userGoal.toLowerCase().includes('дешев')) {
+          const cheapest = universities.reduce((min, u) => u.price < min.price ? u : min);
+          analysis += `Если для вас важнее всего низкая цена, то **${cheapest.name}** предлагает самое доступное обучение (${cheapest.price.toLocaleString()} ₸).`;
+        } else if (data.userGoal.toLowerCase().includes('общаг') || data.userGoal.toLowerCase().includes('общежит')) {
+          const withDorm = universities.filter(u => u.hasDormitory);
+          if (withDorm.length > 0) {
+            analysis += `Для вас важнее всего наличие общежития. **${withDorm[0].name}** предоставляет общежитие для студентов.`;
+          } else {
+            analysis += `К сожалению, ни один из выбранных университетов не предоставляет общежитие.`;
+          }
+        } else {
+          analysis += `Исходя из вашей цели "${data.userGoal}", **${winner.name}** выглядит предпочтительнее благодаря сочетанию качества образования и доступности.`;
+        }
+        
+        resolve({
+          winner: winner.name,
+          analysis: analysis,
+          reasoning: `Рекомендация основана на анализе стоимости обучения, рейтинга, местоположения и других факторов, важных для вашей цели: "${data.userGoal}".`,
+        });
+      }, 2000);
+    });
+  }
+};
+
+export interface IChanceAnalysisRequest {
+  universityId: string;
+  userScore: number;
+  subject: string;
+}
+
+export interface IChanceAnalysisResponse {
+  chance: 'High' | 'Medium' | 'Low';
+  message: string;
+}
+
+export const analyzeChance = async (data: IChanceAnalysisRequest): Promise<IChanceAnalysisResponse> => {
+  try {
+    const response = await api.post<IChanceAnalysisResponse>('/ai/analyze-chance', data);
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при анализе шансов поступления:', error);
+    // Mock-ответ для MVP
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Получаем информацию об университете для более точного анализа
+        const university = mockUniversities.find(u => u.id === data.universityId);
+        const minScore = university?.minEntScore || 100;
+        const scoreDiff = data.userScore - minScore;
+        
+        let chance: 'High' | 'Medium' | 'Low';
+        let message: string;
+        
+        if (scoreDiff >= 20) {
+          chance = 'High';
+          message = `Ваш балл ${data.userScore} значительно превышает минимальный порог (${minScore}) на ${scoreDiff} баллов. У вас высокие шансы на поступление! Конкуренция на направление "${data.subject}" в этом году умеренная. Рекомендуем подать документы в первую волну.`;
+        } else if (scoreDiff >= 5) {
+          chance = 'Medium';
+          message = `Ваш балл ${data.userScore} выше минимального порога (${minScore}) на ${scoreDiff} баллов. У вас средние шансы на поступление. Конкуренция на направление "${data.subject}" может быть высокой. Рекомендуем подстраховаться и подать документы в несколько университетов, а также рассмотреть возможность участия в дополнительных конкурсах.`;
+        } else if (scoreDiff >= 0) {
+          chance = 'Low';
+          message = `Ваш балл ${data.userScore} близок к минимальному порогу (${minScore}). Шансы на поступление низкие, но возможны. Конкуренция на направление "${data.subject}" в этом году высокая. Рекомендуем рассмотреть альтернативные варианты или программы с более низким проходным баллом. Также стоит обратить внимание на программы с платным обучением.`;
+        } else {
+          chance = 'Low';
+          message = `Ваш балл ${data.userScore} ниже минимального порога (${minScore}) на ${Math.abs(scoreDiff)} баллов. К сожалению, шансы на поступление очень низкие. Рекомендуем рассмотреть другие университеты с более низкими требованиями или программы с платным обучением. Также можно попробовать улучшить результаты ЕНТ и подать документы в следующем году.`;
+        }
+        
+        resolve({
+          chance,
+          message,
         });
       }, 1500);
     });
