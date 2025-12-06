@@ -4,6 +4,7 @@ import ScrollToTop from './ScrollToTop';
 import { Toaster } from '@/components/ui/toaster';
 import AddUniversityModal from './AddUniversityModal';
 import { Button } from '@/components/ui/button';
+import AiChatSidebar from './AiChatSidebar';
 
 const Layout = () => {
   return (
@@ -28,6 +29,7 @@ const Layout = () => {
       </footer>
       <ScrollToTop />
       <Toaster />
+      <AiChatSidebar />
     </div>
   );
 };
