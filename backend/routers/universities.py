@@ -256,28 +256,39 @@ async def request_ai(ai_request: AIRequest):
     return response
 
 @router.post('/advisor/recommend', tags=['Advisor'])
-async def advisor_recommend(advisor_request: AdvisorRequest):
+async def advisor_recommend(advisor_request: AdvisorRequest, db: db_dependency):
     """
     Рекомендация университета на основе данных абитуриента.
     Возвращает название университета и краткое обоснование.
     """
+    # Получаем список доступных университетов из базы данных
+    universities = db.query(University).all()
+    
+    # Формируем список доступных университетов для промпта
+    available_universities = []
+    for uni in universities:
+        # Получаем программы для описания специализаций
+        programs = db.query(Program).filter(Program.university_id == uni.id).limit(3).all()
+        specializations = ", ".join([p.name for p in programs[:3]]) if programs else "различные направления"
+        available_universities.append(f"- {uni.name} ({uni.city}) - {specializations}")
+    
+    universities_list = "\n".join(available_universities) if available_universities else "- KIMEP University (Алматы) - бизнес, экономика"
+    
     # Формируем промпт для ИИ
-    template = """Ты - ИИ-советник по выбору университета в Казахстане. 
+    template = f"""Ты - ИИ-советник по выбору университета в Казахстане. 
 Проанализируй данные абитуриента и порекомендуй подходящий университет.
 
-Важно: Ответ должен быть в формате JSON:
-{
-    "university_name": "Название университета",
-    "short_reason": "Краткое обоснование рекомендации (2-3 предложения)"
-}
+ВАЖНО: Ты МОЖЕШЬ рекомендовать ТОЛЬКО университеты из следующего списка. 
+НЕ придумывай другие университеты, которых нет в списке!
 
-Доступные университеты в Казахстане:
-- KIMEP University (Алматы) - бизнес, экономика, международные отношения
-- Turan University (Алматы) - инженерия, бизнес, медицина, гуманитарные науки
-- KBTU (Алматы) - инженерия, IT, бизнес
-- Nazarbayev University (Нур-Султан) - флагманский университет, все направления
-- КазНПУ имени Абая (Алматы) - педагогика, гуманитарные науки
-- Al-Farabi KazNU (Алматы) - крупнейший университет, все направления
+Доступные университеты в базе данных:
+{universities_list}
+
+Важно: Ответ должен быть в формате JSON:
+{{
+    "university_name": "Название университета (ТОЧНО как в списке выше)",
+    "short_reason": "Краткое обоснование рекомендации (2-3 предложения)"
+}}
 
 Учти:
 - Балл ЕНТ абитуриента
@@ -286,7 +297,7 @@ async def advisor_recommend(advisor_request: AdvisorRequest):
 - Предпочтения по городу
 - Карьерные цели
 
-Ответь только JSON, без дополнительного текста."""
+Ответь только JSON, без дополнительного текста. Название университета должно точно совпадать с одним из списка выше."""
 
     text = f"""Данные абитуриента:
 - Балл ЕНТ: {advisor_request.ent_score}
@@ -295,7 +306,7 @@ async def advisor_recommend(advisor_request: AdvisorRequest):
 - Желаемый город: {advisor_request.preferred_city}
 - Карьерная цель: {advisor_request.career_goal}
 
-Рекомендуй наиболее подходящий университет и обоснуй выбор."""
+Рекомендуй наиболее подходящий университет ИЗ СПИСКА ВЫШЕ и обоснуй выбор."""
 
     prompt = f"{template}\n\n{text}"
     
@@ -317,25 +328,73 @@ async def advisor_recommend(advisor_request: AdvisorRequest):
         
         result = json.loads(cleaned_response)
         
+        # Проверяем, что рекомендованный университет есть в базе
+        recommended_name = result.get("university_name", "")
+        university_found = any(uni.name == recommended_name for uni in universities)
+        
+        if not university_found:
+            # Если ИИ рекомендовал университет, которого нет в базе, выбираем наиболее подходящий
+            # Ищем по городу или берем первый доступный
+            preferred_city = advisor_request.preferred_city.lower() if advisor_request.preferred_city else ""
+            matching_university = None
+            
+            if preferred_city:
+                matching_university = next(
+                    (uni for uni in universities if preferred_city in uni.city.lower() or uni.city.lower() in preferred_city),
+                    None
+                )
+            
+            if not matching_university and universities:
+                matching_university = universities[0]
+            
+            if matching_university:
+                result["university_name"] = matching_university.name
+                result["short_reason"] = f"Рекомендуем {matching_university.name} на основе ваших данных. " + (result.get("short_reason", "")[:150] if result.get("short_reason") else "")
+        
         # Проверяем наличие нужных полей
         if "university_name" not in result or "short_reason" not in result:
-            # Если ИИ вернул неполный ответ, формируем базовый
+            # Если ИИ вернул неполный ответ, выбираем первый доступный университет
+            fallback_uni = universities[0] if universities else None
             return {
-                "university_name": "KIMEP University",
+                "university_name": fallback_uni.name if fallback_uni else "KIMEP University",
                 "short_reason": ai_response[:200] if len(ai_response) > 200 else ai_response
             }
         
         return result
     except json.JSONDecodeError:
-        # Если не удалось распарсить JSON, возвращаем ответ как есть
+        # Если не удалось распарсить JSON, выбираем университет по городу или первый доступный
+        preferred_city = advisor_request.preferred_city.lower() if advisor_request.preferred_city else ""
+        matching_university = None
+        
+        if preferred_city and universities:
+            matching_university = next(
+                (uni for uni in universities if preferred_city in uni.city.lower() or uni.city.lower() in preferred_city),
+                None
+            )
+        
+        if not matching_university and universities:
+            matching_university = universities[0]
+        
         return {
-            "university_name": "KIMEP University",
+            "university_name": matching_university.name if matching_university else "KIMEP University",
             "short_reason": ai_response[:200] if len(ai_response) > 200 else ai_response
         }
     except Exception as e:
-        # В случае ошибки возвращаем базовый ответ
+        # В случае ошибки выбираем университет по городу или первый доступный
+        preferred_city = advisor_request.preferred_city.lower() if advisor_request.preferred_city else ""
+        matching_university = None
+        
+        if preferred_city and universities:
+            matching_university = next(
+                (uni for uni in universities if preferred_city in uni.city.lower() or uni.city.lower() in preferred_city),
+                None
+            )
+        
+        if not matching_university and universities:
+            matching_university = universities[0]
+        
         return {
-            "university_name": "KIMEP University",
+            "university_name": matching_university.name if matching_university else "KIMEP University",
             "short_reason": f"Рекомендуем этот университет на основе ваших данных. Ошибка обработки: {str(e)}"
         }
 

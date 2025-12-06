@@ -161,3 +161,126 @@ export const getAiRecommendation = async (data: IAdvisorRequest): Promise<IAdvis
   }
 };
 
+export interface ICompareAiRequest {
+  universities: IUniversity[];
+  userGoal: string;
+}
+
+export interface ICompareAiResponse {
+  winner: string;
+  analysis: string;
+  reasoning: string;
+}
+
+export const compareWithAi = async (data: ICompareAiRequest): Promise<ICompareAiResponse> => {
+  try {
+    const response = await api.post<ICompareAiResponse>('/ai/compare', data);
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при сравнении университетов с ИИ:', error);
+    // Mock-ответ для MVP
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const universities = data.universities;
+        if (universities.length === 0) {
+          resolve({
+            winner: '',
+            analysis: 'Не выбрано ни одного университета для сравнения.',
+            reasoning: '',
+          });
+          return;
+        }
+        
+        // Выбираем первый университет как победителя (можно улучшить логику)
+        const winner = universities[0];
+        const otherUnis = universities.slice(1);
+        
+        // Генерируем анализ на основе данных
+        const priceComparison = universities.map(u => `${u.name}: ${u.price.toLocaleString()} ₸`).join(', ');
+        const ratingComparison = universities.map(u => `${u.name}: ${u.rating}/5`).join(', ');
+        
+        let analysis = `## Сравнение университетов\n\n`;
+        analysis += `**Стоимость обучения:** ${priceComparison}\n\n`;
+        analysis += `**Рейтинг:** ${ratingComparison}\n\n`;
+        
+        if (data.userGoal.toLowerCase().includes('программист') || data.userGoal.toLowerCase().includes('it')) {
+          analysis += `Исходя из вашей цели стать программистом, **${winner.name}** выглядит предпочтительнее благодаря сильной базе IT`;
+          if (winner.price > otherUnis[0]?.price) {
+            analysis += `, несмотря на более высокую цену`;
+          }
+          analysis += `. Университет находится в ${winner.city} и имеет рейтинг ${winner.rating}/5.`;
+        } else if (data.userGoal.toLowerCase().includes('цена') || data.userGoal.toLowerCase().includes('дешев')) {
+          const cheapest = universities.reduce((min, u) => u.price < min.price ? u : min);
+          analysis += `Если для вас важнее всего низкая цена, то **${cheapest.name}** предлагает самое доступное обучение (${cheapest.price.toLocaleString()} ₸).`;
+        } else if (data.userGoal.toLowerCase().includes('общаг') || data.userGoal.toLowerCase().includes('общежит')) {
+          const withDorm = universities.filter(u => u.hasDormitory);
+          if (withDorm.length > 0) {
+            analysis += `Для вас важнее всего наличие общежития. **${withDorm[0].name}** предоставляет общежитие для студентов.`;
+          } else {
+            analysis += `К сожалению, ни один из выбранных университетов не предоставляет общежитие.`;
+          }
+        } else {
+          analysis += `Исходя из вашей цели "${data.userGoal}", **${winner.name}** выглядит предпочтительнее благодаря сочетанию качества образования и доступности.`;
+        }
+        
+        resolve({
+          winner: winner.name,
+          analysis: analysis,
+          reasoning: `Рекомендация основана на анализе стоимости обучения, рейтинга, местоположения и других факторов, важных для вашей цели: "${data.userGoal}".`,
+        });
+      }, 2000);
+    });
+  }
+};
+
+export interface IChanceAnalysisRequest {
+  universityId: string;
+  userScore: number;
+  subject: string;
+}
+
+export interface IChanceAnalysisResponse {
+  chance: 'High' | 'Medium' | 'Low';
+  message: string;
+}
+
+export const analyzeChance = async (data: IChanceAnalysisRequest): Promise<IChanceAnalysisResponse> => {
+  try {
+    const response = await api.post<IChanceAnalysisResponse>('/ai/analyze-chance', data);
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при анализе шансов поступления:', error);
+    // Mock-ответ для MVP
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Получаем информацию об университете для более точного анализа
+        const university = mockUniversities.find(u => u.id === data.universityId);
+        const minScore = university?.minEntScore || 100;
+        const scoreDiff = data.userScore - minScore;
+        
+        let chance: 'High' | 'Medium' | 'Low';
+        let message: string;
+        
+        if (scoreDiff >= 20) {
+          chance = 'High';
+          message = `Ваш балл ${data.userScore} значительно превышает минимальный порог (${minScore}) на ${scoreDiff} баллов. У вас высокие шансы на поступление! Конкуренция на направление "${data.subject}" в этом году умеренная. Рекомендуем подать документы в первую волну.`;
+        } else if (scoreDiff >= 5) {
+          chance = 'Medium';
+          message = `Ваш балл ${data.userScore} выше минимального порога (${minScore}) на ${scoreDiff} баллов. У вас средние шансы на поступление. Конкуренция на направление "${data.subject}" может быть высокой. Рекомендуем подстраховаться и подать документы в несколько университетов, а также рассмотреть возможность участия в дополнительных конкурсах.`;
+        } else if (scoreDiff >= 0) {
+          chance = 'Low';
+          message = `Ваш балл ${data.userScore} близок к минимальному порогу (${minScore}). Шансы на поступление низкие, но возможны. Конкуренция на направление "${data.subject}" в этом году высокая. Рекомендуем рассмотреть альтернативные варианты или программы с более низким проходным баллом. Также стоит обратить внимание на программы с платным обучением.`;
+        } else {
+          chance = 'Low';
+          message = `Ваш балл ${data.userScore} ниже минимального порога (${minScore}) на ${Math.abs(scoreDiff)} баллов. К сожалению, шансы на поступление очень низкие. Рекомендуем рассмотреть другие университеты с более низкими требованиями или программы с платным обучением. Также можно попробовать улучшить результаты ЕНТ и подать документы в следующем году.`;
+        }
+        
+        resolve({
+          chance,
+          message,
+        });
+      }, 1500);
+    });
+  }
+};
+
